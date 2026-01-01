@@ -11,8 +11,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Tableau Extensions API (official CDN) -->
-    <script src="https://tableau.github.io/extensions-api/lib/tableau.extensions.1.12.0.min.js"></script>
+    <!-- 
+      Tableau Extensions API is automatically injected by Tableau Cloud
+      when this page loads inside a Tableau dashboard.
+      We do NOT need to load it ourselves.
+    -->
 
     <!-- TrustOS Styles -->
     <link rel="stylesheet" href="styles.css">
@@ -108,8 +111,8 @@
         <button class="demo-btn reset" onclick="resetNormal()">🧹 Remove Anomaly</button>
     </div>
 
-    <!-- TrustOS Script (v3 for cache bust) -->
-    <script src="script.js?v=3"></script>
+    <!-- TrustOS Script (v4 for cache bust) -->
+    <script src="script.js?v=4"></script>
 </body>
 
 </html>
