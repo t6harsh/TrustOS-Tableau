@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustOS - Dashboard Safety Layer</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tableau Extensions API (official CDN) -->
+    <script src="https://tableau.github.io/extensions-api/lib/tableau.extensions.1.12.0.min.js"></script>
+
+    <!-- TrustOS Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="state-loading">
+    <!-- Main Container -->
+    <div class="trustos-container">
+        <div class="glass-card">
+            <!-- Logo -->
+            <div class="trustos-logo">
+                <div class="logo-icon">🛡️</div>
+                <span class="logo-text">TrustOS</span>
+            </div>
+            <p class="tagline">Dashboard Safety Layer</p>
+
+            <!-- Status Badge -->
+            <div id="status-badge" class="status-badge loading">
+                <span class="status-icon"><span class="loading-spinner"></span></span>
+                <span id="status-text">Initializing</span>
+            </div>
+
+            <!-- Alert Message -->
+            <p id="alert-message" class="alert-message">
+                Connecting to TrustOS backend...
+            </p>
+
+            <!-- Metric Display (shown on anomaly) -->
+            <div id="metric-display" class="metric-display">
+                <div class="metric-label">Detected Value</div>
+                <div id="metric-value" class="metric-value anomaly">--</div>
+                <div id="metric-baseline" class="metric-baseline">Historical range: 20% - 28%</div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div id="stat-zscore" class="stat-value">--</div>
+                    <div class="stat-label">Z-Score</div>
+                </div>
+                <div class="stat-item">
+                    <div id="stat-baseline" class="stat-value">--</div>
+                    <div class="stat-label">Baseline</div>
+                </div>
+                <div class="stat-item">
+                    <div id="stat-checks" class="stat-value">--</div>
+                    <div class="stat-label">Checks</div>
+                </div>
+            </div>
+
+            <!-- Confidence Meter -->
+            <div class="confidence-meter">
+                <div class="meter-label">
+                    <span>Confidence Score</span>
+                    <span id="confidence-value">--%</span>
+                </div>
+                <div class="meter-bar">
+                    <div id="meter-fill" class="meter-fill high" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="runAudit()">🔄 Re-Audit</button>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                Last checked: <span id="last-checked">Never</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Safety Mode Full-Screen Overlay -->
+    <div id="safety-overlay" class="safety-overlay">
+        <div class="safety-content">
+            <div class="safety-icon">⛔</div>
+            <h1 class="safety-title">Safety Mode Active</h1>
+            <p id="safety-message" class="safety-message">
+                Critical anomaly detected. Dashboard visibility has been restricted to prevent decision-making on
+                potentially corrupted data.
+            </p>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="runAudit()">🔄 Re-Check Now</button>
+                <button class="btn btn-success" onclick="resetNormal()">✅ Reset to Normal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo Controls (inject/remove anomaly for presentation) -->
+    <div class="demo-controls">
+        <button class="demo-btn trigger" onclick="triggerAnomaly()">💉 Inject Anomaly</button>
+        <button class="demo-btn reset" onclick="resetNormal()">🧹 Remove Anomaly</button>
+    </div>
+
+    <!-- TrustOS Script -->
+    <script src="script.js"></script>
+</body>
+
+</html>

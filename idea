@@ -1,0 +1,70 @@
+Project Name: TrustOS for Tableau
+Tagline: The "Check Engine" Light for Your Dashboard
+
+1. The Elevator Pitch (Human-Readable)
+TrustOS is a safety layer for Tableau. It prevents executives from making decisions on broken numbers by automatically hiding visualizations when data patterns don't look right—even if the database says everything is "Success."
+
+2. The Core Problem (The "Silent Killer")
+Modern data stacks (dbt/Airflow) only check if the pipeline worked. They don't check if the number makes sense.
+Three scenarios where standard tools fail, but TrustOS saves the day:
+The Currency Flip: A developer changes a logic flag, and suddenly "Yen" values are summed as "Dollars." Revenue looks like it grew 100x. dbt says "Pass." TrustOS blocks it.
+The Join Explosion: A change in the warehouse creates duplicate rows. Sales figures double overnight. Airflow says "Success." TrustOS blocks it.
+The Filter Drop: A dashboard filter for "Active Customers Only" is accidentally removed. Churn numbers look artificially low. TrustOS blocks it.
+The Result: Executives lose trust. TrustOS restores it.
+
+3. The Solution: The "Hero Metric" Approach
+We don't try to monitor the whole ocean. We monitor the things that get people fired.
+The TrustOS Logic:
+Define the Hero Metric: Admin selects a critical KPI (e.g., Global Gross Margin).
+Establish Baseline: TrustOS knows that Gross Margin usually fluctuates between 20% and 30%.
+The VizQL Audit: When the dashboard loads, TrustOS uses Tableau VizQL Data Service to fetch the actual number about to be displayed.
+The Circuit Breaker:
+Is Margin 25%? → Green Badge.
+Is Margin 95%? (Impossible) → Red Screen.
+
+4. How It Works (Simplified Tech Stack)
+We use Tableau's newest tools to build a "Decision Firewall."
+The Listener (VizQL Data Service):
+Instead of querying the slow database, we query the Tableau Datasource directly.
+Benefit: We see exactly what the user sees (after filters/calcs).
+The Check (Python/FastAPI):
+A simple Python script compares the current value against a 30-day moving average.
+No complex AI: Simple statistical rules (Z-Score) are faster and more reliable than LLMs.
+The Enforcer (Dynamic Zone Visibility):
+We toggle a simple boolean: [Show_Dashboard].
+If False, the entire dashboard is hidden and replaced with a "Safety Mode" overlay.
+
+5. The "Killer" Demo Script (Focus: Gross Margin)
+0:00 (The Setup):
+Show a standard Executive Dashboard. Global Gross Margin is healthy at 24%.
+See the Green "TrustOS Verified" badge in the corner.
+Narrator: "This is what a confident decision looks like."
+0:20 (The Disaster):
+Action: We simulate a "Currency Logic Failure" in the backend. (Simulating a common coding error where exchange rates aren't applied).
+Narrator: "A developer just broke the currency conversion logic. In a normal dashboard, Profit would suddenly look massive. The CEO might order a hiring spree based on fake money."
+0:40 (The Save):
+Refresh the Dashboard.
+BOOM. The charts do not load.
+Instead, a clean Red Screen appears:
+"SAFETY MODE ACTIVE"
+"Critical Anomaly Detected: Gross Margin is 2,400% (Historical Max: 28%)"
+"Action: Dashboard Locked to prevent errors."
+0:55 (The Value):
+Narrator: "We didn't just find a bug. We stopped a disaster. That is TrustOS."
+
+6. Why This Wins (Judge Checklist)
+✅ Tableau Native: It uses VizQL Data Service (the shiny new toy judges want to see) and Dynamic Zone Visibility.
+✅ Visceral Impact: It solves a problem every judge has seen: "Why is the number wrong?"
+✅ Realistic: We aren't promising "Self-Healing AI." We are promising a Safety Lock. That is believable and executable.
+✅ Future-Proof: Mention briefly: "This also prevents Salesforce Agentforce from hallucinating answers based on the 2,400% margin."
+
+7. FAQ (Defending the Idea)
+Q: Is this real-time? A: It runs on-demand (dashboard load) or on a schedule (e.g., hourly). This ensures no latency for the user while maintaining safety.
+Q: Why not just use alerts? A: Alerts are ignored. A locked dashboard cannot be ignored. This forces governance.
+Q: Is it hard to set up? A: No. You just tag your "Hero Metrics" in the Tableau Datasource description, and TrustOS automatically picks them up.
+
+8. Built With
+Tableau VizQL Data Service
+Tableau Extensions API
+Python (FastAPI)
+Pandas (For simple Moving Average checks)
