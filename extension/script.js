@@ -194,8 +194,15 @@ async function analyzeWorksheetData() {
 
     // Find the hero metric column
     const metricColIndex = findColumnIndex(columns, CONFIG.heroMetricField);
+
+    // Log available columns for debugging if not found
     if (metricColIndex === -1) {
-        throw new Error(`Hero metric "${CONFIG.heroMetricField}" not found. Available: ${columns.map(c => c.fieldName).join(', ')}`);
+        const availableCols = columns.map(c => c.fieldName).join(', ');
+        console.error(`❌ Hero metric "${CONFIG.heroMetricField}" not found.`);
+        console.error(`   Available columns: ${availableCols}`);
+        throw new Error(`Hero metric "${CONFIG.heroMetricField}" not found. Available: ${availableCols}`);
+    } else {
+        console.log(`✅ Found metric column: "${columns[metricColIndex].fieldName}" (matches "${CONFIG.heroMetricField}")`);
     }
 
     // Find time column (optional, for determining "latest")
@@ -265,13 +272,18 @@ async function analyzeWorksheetData() {
 }
 
 /**
- * Find column index by name (case-insensitive, partial match)
+ * Find column index by name with fuzzy matching
+ * Handles: "SUM(Gross Margin)", "Gross_Margin", "AVG(Gross Margin)", etc.
  */
 function findColumnIndex(columns, fieldName) {
-    const lower = fieldName.toLowerCase();
-    return columns.findIndex(col =>
-        col.fieldName.toLowerCase().includes(lower)
-    );
+    // Normalize target: remove special chars, lowercase
+    const cleanTarget = fieldName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    return columns.findIndex(col => {
+        // Normalize candidate column name
+        const cleanCol = col.fieldName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return cleanCol.includes(cleanTarget);
+    });
 }
 
 /**
@@ -320,28 +332,28 @@ function determineStatus(latestValue, stats, zScore) {
         status = 'LOCKED';
         isSafe = false;
         color = '#dc3545';
-        message = `CRITICAL: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Outside safe bounds (${CONFIG.absoluteMin}-${CONFIG.absoluteMax}%). Dashboard Locked.`;
+        message = `CRITICAL: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Outside safe bounds(${CONFIG.absoluteMin} - ${CONFIG.absoluteMax} %).Dashboard Locked.`;
     }
     // Check Z-Score (statistical anomaly)
     else if (zScore > CONFIG.zScoreThreshold) {
         status = 'LOCKED';
         isSafe = false;
         color = '#dc3545';
-        message = `ANOMALY: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% (Z-Score: ${zScore.toFixed(1)} > ${CONFIG.zScoreThreshold}). Dashboard Locked.`;
+        message = `ANOMALY: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% (Z - Score: ${zScore.toFixed(1)} > ${CONFIG.zScoreThreshold}). Dashboard Locked.`;
     }
     // Warning zone
     else if (zScore > CONFIG.zScoreThreshold * 0.7) {
         status = 'WARNING';
         isSafe = true;
         color = '#ffc107';
-        message = `WARNING: ${CONFIG.heroMetricName} at ${latestValue.toFixed(1)}% - Slightly unusual (Z-Score: ${zScore.toFixed(1)}).`;
+        message = `WARNING: ${CONFIG.heroMetricName} at ${latestValue.toFixed(1)}% - Slightly unusual(Z - Score: ${zScore.toFixed(1)}).`;
     }
     // Safe
     else {
         status = 'SAFE';
         isSafe = true;
         color = '#28a745';
-        message = `TrustOS Verified: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Normal (Z-Score: ${zScore.toFixed(1)}).`;
+        message = `TrustOS Verified: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Normal(Z - Score: ${zScore.toFixed(1)}).`;
     }
 
     return {
@@ -406,9 +418,9 @@ function updateUIState(state, data = {}) {
             alertMessage.textContent = data.message || 'Anomaly detected.';
 
             if (data.latestValue !== undefined) {
-                document.getElementById('metric-value').textContent = `${data.latestValue}%`;
+                document.getElementById('metric-value').textContent = `${data.latestValue}% `;
                 document.getElementById('metric-baseline').textContent =
-                    `Data range: ${(data.mean - 2 * data.std).toFixed(0)}% - ${(data.mean + 2 * data.std).toFixed(0)}% (n=${data.dataPoints})`;
+                    `Data range: ${(data.mean - 2 * data.std).toFixed(0)}% - ${(data.mean + 2 * data.std).toFixed(0)}% (n = ${data.dataPoints})`;
                 metricDisplay.classList.add('visible');
             }
 
@@ -442,15 +454,15 @@ function updateStats(data) {
         document.getElementById('stat-zscore').textContent = data.zScore.toFixed(1);
     }
     if (data.mean !== undefined) {
-        document.getElementById('stat-baseline').textContent = `${data.mean.toFixed(0)}%`;
+        document.getElementById('stat-baseline').textContent = `${data.mean.toFixed(0)}% `;
     }
     document.getElementById('stat-checks').textContent = checkCount;
 
     const confidence = data.confidence || 0;
-    document.getElementById('confidence-value').textContent = `${confidence.toFixed(0)}%`;
+    document.getElementById('confidence-value').textContent = `${confidence.toFixed(0)}% `;
 
     const meterFill = document.getElementById('meter-fill');
-    meterFill.style.width = `${confidence}%`;
+    meterFill.style.width = `${confidence}% `;
     meterFill.classList.remove('high', 'medium', 'low');
     meterFill.classList.add(confidence >= 70 ? 'high' : confidence >= 40 ? 'medium' : 'low');
 }
@@ -471,7 +483,7 @@ async function setTableauParameter(isSafe) {
 
         if (safetyParam) {
             await safetyParam.changeValueAsync(isSafe);
-            console.log(`🔒 Circuit Breaker: ${isSafe ? 'OPEN (safe)' : 'CLOSED (locked)'}`);
+            console.log(`🔒 Circuit Breaker: ${isSafe ? 'OPEN (safe)' : 'CLOSED (locked)'} `);
         } else {
             console.warn(`⚠️ Parameter "${CONFIG.safetyParameter}" not found`);
         }
