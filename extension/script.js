@@ -56,10 +56,29 @@ async function init() {
     console.log('🛡️ TrustOS Extension Initializing...');
     console.log('📊 Using Tableau Extensions API for REAL data access');
 
+    // Check if tableau object exists
+    if (typeof tableau === 'undefined') {
+        console.error('❌ ERROR: tableau object is undefined');
+        console.error('   The Tableau Extensions API script did not load.');
+        updateUIState('standalone');
+        return;
+    }
+
+    console.log('✅ tableau object found');
+
+    if (typeof tableau.extensions === 'undefined') {
+        console.error('❌ ERROR: tableau.extensions is undefined');
+        updateUIState('standalone');
+        return;
+    }
+
+    console.log('✅ tableau.extensions found');
+
     try {
+        console.log('🔄 Calling tableau.extensions.initializeAsync()...');
         await tableau.extensions.initializeAsync();
         isTableauInitialized = true;
-        console.log('✅ Tableau Extensions API Initialized');
+        console.log('✅ Tableau Extensions API Initialized SUCCESSFULLY');
 
         const dashboard = tableau.extensions.dashboardContent.dashboard;
         console.log(`📋 Dashboard: ${dashboard.name}`);
@@ -96,6 +115,10 @@ async function init() {
         setInterval(runAudit, CONFIG.pollInterval);
 
     } catch (error) {
+        console.error('❌ Tableau API initialization FAILED');
+        console.error('   Error name:', error.name);
+        console.error('   Error message:', error.message);
+        console.error('   Full error:', error);
         console.warn('⚠️ Running in standalone mode (outside Tableau)');
         isTableauInitialized = false;
         updateUIState('standalone');
