@@ -7,7 +7,7 @@
     <author name="TrustOS Team" email="team@trustos.dev" organization="TrustOS" website="https://trustos.dev"/>
     <min-api-version>1.7</min-api-version>
     <source-location>
-      <url>http://localhost:3000/index.html</url>
+      <url>https://t6harsh.github.io/TrustOS-Tableau/extension/index.html</url>
     </source-location>
     <icon>iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAATlJREFUOI2dk79Kw1AUh7+bNCmtVoVCF0EXQRBBnN3cXHwBJ19A3HwR34Cugi+guDk4OLgoiIu4WGgdDNJSmpjEpjlZPEl6m56Q7sLlJOf+vjv8uRdikIQxQJsIsNYy/wPZC2rHJ7b54cEuZMJQrS+iZ0CRgN0zDfNnN9Y89sxgywYZHYChK0CfNhF0LhPf9CzwtYPdZJcb+N73ONPZ8/M5jwEvHN10d3dkb/8p0dH+sKrJWtDpNMlkMvmxOBNIoQS9YRD/qpVFfM3X15dKS0tZv16frbS0VM7Py2i1WqGxGBMYhnH8+uqMWlpaVAJOJBJO1+ulp6dHFYtF1dpqNKVS6ejvz7iP2aw5oL397NHbdVe8oCN9Xz/Q9nZr8PT0eHN6+vjc19eX55eXuXv37n+Zv3P/T3o+nxvJ+An/w6pL/lHhKwAAAABJRU5ErkJggg==</icon>
     <permissions>
