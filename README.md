@@ -269,14 +269,40 @@ flowchart LR
 
 | Metric | Before TrustOS | With TrustOS |
 |--------|----------------|--------------|
-| Catastrophic KPI misreads | Undetected | **100% prevented** |
-| Decision risk window | Hours | **Zero** |
-| AI agent bad-data actions | Possible | **Blocked** |
-| Downstream export corruption | Uncontrolled | **Gate-checked** |
+| Catastrophic KPI misreads | Undetected | **Caught at decision-time** |
+| Decision risk window | Hours to days | **Seconds** |
+| AI agent bad-data actions | Possible | **Gated** |
+| Downstream export corruption | Uncontrolled | **Flagged before export** |
 
 ### The Core Insight
 
 > *"TrustOS converts silent data failures into safe, visible system states."*
+
+---
+
+## 🔑 Why This Must Be in Tableau
+
+TrustOS isn't just JavaScript + statistics. It's deeply integrated with Tableau's native capabilities:
+
+| Tableau Capability | How TrustOS Uses It |
+|--------------------|--------------------|
+| **Extensions API** | Real-time access to worksheet data via `getSummaryDataReaderAsync()` |
+| **Parameters API** | `DecisionTrustState` as a first-class Tableau object |
+| **Dynamic Zone Visibility** | Native UI gating—no custom overlays |
+| **VizQL Semantics** | Operates on the same aggregated data users see |
+
+> An external tool would require ETL → Database → API → Dashboard. TrustOS operates **at the point of consumption**, inside the visualization layer.
+
+---
+
+## ⚠️ Honest Limitations
+
+| Limitation | Mitigation |
+|------------|------------|
+| Z-Score is naive for seasonal data | Threshold tuning + future ML roadmap |
+| Agent gating is conceptual | Pattern demonstrated, not production-enforced |
+| UI hiding ≠ security gate | Defense-in-depth with access controls |
+| Demo uses simulated corruption | Explicitly stated; real detection logic runs |
 
 ---
 
