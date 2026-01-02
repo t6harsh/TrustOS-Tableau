@@ -61,7 +61,7 @@
 >
 > No black-box AI. No hallucinations. Just fast, deterministic checks.
 >
-> The result is written into a Tableau parameter called **[TrustOS_Status]**.”
+> The result is written into a Tableau parameter called **[DecisionTrustState]**.”
 
 ---
 
@@ -73,7 +73,7 @@
 
 > “This is the critical innovation.
 >
-> [TrustOS_Status] is referenced directly *inside Tableau* — in calculated fields and Dynamic Zone Visibility.
+> [DecisionTrustState] is referenced directly *inside Tableau* — in calculated fields and Dynamic Zone Visibility.
 >
 > That means TrustOS doesn’t just warn you.
 >
@@ -93,7 +93,7 @@
 >
 > This is a controlled simulation for demo clarity, but the detection logic is real.”
 
-**Action:** Click **Inject Anomaly** / toggle corrupted value
+**Action:** Click **Simulate Regression** button
 
 **Narration:**
 
@@ -117,7 +117,7 @@
 >
 > Not hidden. Not warned. Locked.
 >
-> Because [TrustOS_Status] is now FALSE, Tableau itself prevents the visualization from rendering.
+> Because [DecisionTrustState] is now FALSE, Tableau itself prevents the visualization from rendering.
 >
 > No executive can act on this data.”
 
@@ -322,7 +322,7 @@ The detection logic is real.”
 
 “Trust is revoked.
 
-Because TrustOS Status is now false, Tableau itself prevents the visualization from rendering.
+Because DecisionTrustState is now false, Tableau itself prevents the visualization from rendering.
 
 No decision can be made on this data.”
 
