@@ -35,7 +35,7 @@ const CONFIG = {
     targetWorksheet: null,
 
     // Parameter to control dashboard visibility
-    safetyParameter: 'TrustOS_Status',
+    safetyParameter: 'DecisionTrustState',
 
     // Polling interval (ms)
     pollInterval: 30000,
