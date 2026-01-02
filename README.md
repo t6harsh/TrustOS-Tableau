@@ -1,22 +1,21 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/🛡️_TrustOS-Decision_Trust_Fabric-1a1a2e?style=for-the-badge&labelColor=2D3748" alt="TrustOS">
+  <img src="https://img.shields.io/badge/🛡️_TrustOS-Dashboard_Guardian-1a1a2e?style=for-the-badge&labelColor=2D3748" alt="TrustOS">
 </p>
 
 <h1 align="center">TrustOS</h1>
 
 <p align="center">
-  <strong>The Decision Trust Fabric for Tableau</strong>
+  <strong>A Trust Layer for Tableau Dashboards</strong>
 </p>
 
 <p align="center">
-  <em>A semantic trust layer that governs humans AND AI agents across your analytics platform.</em>
+  <em>Automatically detect data anomalies and lock dashboards before bad numbers reach decision-makers.</em>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Tableau-Extensions_API-E97627?style=flat-square&logo=tableau&logoColor=white" alt="Tableau">
   <img src="https://img.shields.io/badge/Primitive-DecisionTrustState-4CAF50?style=flat-square" alt="Trust State">
-  <img src="https://img.shields.io/badge/AI_Ready-Agent_Gating-9C27B0?style=flat-square" alt="AI Agent">
-  <img src="https://img.shields.io/badge/Multi--Metric-Composite_Trust-2196F3?style=flat-square" alt="Multi-Metric">
+  <img src="https://img.shields.io/badge/Analysis-Z--Score_Statistical-2196F3?style=flat-square" alt="Z-Score">
 </p>
 
 <p align="center">
@@ -130,52 +129,32 @@ if (worstMetric.zScore > threshold) {
 
 ---
 
-## 🤖 AI Agent Gating
+## 🔮 Future State: AI Agent Integration
 
-**TrustOS prevents AI agents from acting on corrupted analytics.**
+> **Note:** This section describes a proposed architecture for how AI agents could consume TrustOS in the future. The current implementation is client-side only.
 
-In the age of Agentforce and autonomous AI, bad data doesn't just mislead humans—it triggers automated actions.
+In the age of Agentforce and autonomous AI, bad data doesn't just mislead humans—it triggers automated actions. TrustOS's `DecisionTrustState` parameter could be exposed to agents:
 
-### Agent Decision Endpoint
+### Proposed Architecture
 
 ```
-GET /agent/decision?dashboard=executive_dashboard
-
-Response (TRUSTED):
-{
-    "trust_state": "TRUSTED",
-    "confidence": 0.94,
-    "allow_action": true,
-    "metrics_evaluated": 3
-}
-
-Response (UNTRUSTED):
-{
-    "trust_state": "UNTRUSTED", 
-    "confidence": 0.12,
-    "allow_action": false,
-    "blocked_reason": "Gross Margin Z-Score: 847 exceeds threshold",
-    "recommendation": "Await data team review"
-}
+┌─────────────────────────────────────────────────────────────┐
+│                    FUTURE INTEGRATION                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   AI Agent queries Tableau                                  │
+│         ↓                                                   │
+│   Check: Is DecisionTrustState = TRUE?                      │
+│         ↓                                                   │
+│   If FALSE → Agent blocks action, awaits human review       │
+│   If TRUE  → Agent proceeds with data-driven action         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Integration Pattern
+This pattern would allow agents to respect the same trust boundary that governs human consumers.
 
-```python
-# AI Agent Integration
-def execute_decision(dashboard_id, action):
-    trust = trustos.get_decision_state(dashboard_id)
-    
-    if trust.state == "UNTRUSTED":
-        return {
-            "action": "BLOCKED",
-            "reason": "TrustOS prevented execution on untrusted data"
-        }
-    
-    return execute_action(action)
-```
-
-> *"TrustOS prevents AI agents from hallucinating decisions based on corrupted analytics."*
+> *"The same trust signal that locks the dashboard could gate automated decisions."*
 
 ---
 
@@ -227,23 +206,22 @@ Every evaluation is logged for auditability and debugging.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Data Flow
+### Actual Data Flow (Honest Architecture)
 
 ```mermaid
 flowchart LR
-    A[VizQL Data Service] --> B[TrustOS Fabric]
-    B --> C{Multi-Metric Analysis}
-    C --> D[Gross Margin]
-    C --> E[Revenue]
-    C --> F[Active Users]
-    D --> G{Composite Trust}
-    E --> G
-    F --> G
-    G -->|TRUSTED| H[Dashboard Visible]
-    G -->|TRUSTED| I[Agent Allowed]
-    G -->|UNTRUSTED| J[Dashboard Locked]
-    G -->|UNTRUSTED| K[Agent Denied]
+    A[Tableau Server] --> B[Client Browser]
+    B --> C[Dashboard Renders]
+    C --> D[TrustOS Extension]
+    D --> E[getSummaryDataReaderAsync]
+    E --> F{Z-Score Analysis}
+    F -->|Safe| G[DecisionTrustState = TRUE]
+    F -->|Anomaly| H[DecisionTrustState = FALSE]
+    G --> I[Dashboard Visible]
+    H --> J[Dashboard Locked via Dynamic Zone Visibility]
 ```
+
+> **Why this is powerful:** TrustOS is lightweight and plug-and-play. No IT re-architecture needed. It operates at the point of consumption, inside the existing visualization layer.
 
 ---
 
