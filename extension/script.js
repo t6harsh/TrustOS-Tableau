@@ -179,6 +179,15 @@ async function runAudit() {
 async function analyzeWorksheetData() {
     console.log(`📥 Fetching data from: ${currentWorksheet.name}`);
 
+    // Clear any mark selections to ensure we get ALL data points
+    // (Otherwise Tableau only returns selected marks)
+    try {
+        await currentWorksheet.clearSelectedMarksAsync();
+        console.log('   Cleared mark selections for full dataset');
+    } catch (e) {
+        // Some worksheets don't support this, continue anyway
+    }
+
     // Fetch real data using Extensions API
     let dataTable;
 
