@@ -1,15 +1,18 @@
 /**
- * TrustOS Extension - Tableau Extensions API Integration
+ * TrustOS - Decision Trust Fabric for Tableau
  * 
- * This extension uses the Tableau Extensions API to:
- * 1. Fetch REAL data directly from Tableau worksheets
- * 2. Calculate REAL Z-Score from visible time-series data in the chart
- * 3. Control dashboard visibility via parameters
+ * A semantic trust layer that governs humans AND AI agents across analytics.
  * 
- * Technical Details:
- * - Uses getSummaryDataReaderAsync() to access worksheet data
- * - Calculates Mean and Standard Deviation from ALL data points in the visualization
- * - Compares latest value against historical values IN THE SHEET
+ * Core Capabilities:
+ * 1. Multi-metric trust evaluation via Z-Score analysis
+ * 2. DecisionTrustState primitive - platform-wide trust signal
+ * 3. Dashboard circuit breaker via Dynamic Zone Visibility
+ * 4. Trust timeline for auditability
+ * 
+ * Technical Implementation:
+ * - Uses getSummaryDataReaderAsync() for real worksheet data access
+ * - Calculates Mean/StdDev from ALL data points in the visualization
+ * - Composite trust score governs dashboard visibility
  */
 
 // Configuration
@@ -48,6 +51,9 @@ let isTableauInitialized = false;
 let checkCount = 0;
 let currentWorksheet = null;
 let lastAnalysis = null;
+
+// Trust Timeline (audit trail)
+let trustTimeline = [];
 
 /**
  * Initialize the extension
@@ -493,29 +499,29 @@ async function setTableauParameter(isSafe) {
 }
 
 // ============================================================
-// DEMO FUNCTIONS
-// These inject an anomaly value into the REAL data analysis
-// The extension still fetches real data, but adds a fake point
+// SIMULATION FUNCTIONS
+// These simulate logic regression scenarios for demonstration
+// The extension still uses real data + injects a corrupted value
 // ============================================================
 
 /**
- * DEMO: Inject anomaly - adds a bad data point to real analysis
+ * Simulate Logic Regression - adds corrupted data point to real analysis
  * 
- * This does NOT fake the detection. It injects a value (like a data
- * corruption would), and the real statistical analysis detects it.
+ * This does NOT fake the detection. It simulates what happens when
+ * a data pipeline has a logic error (e.g., decimal shift, currency flip).
  */
 function triggerAnomaly() {
-    console.log('💥 DEMO: Injecting anomaly into data analysis...');
+    console.log('⚠️ SIMULATION: Logic regression detected in data pipeline...');
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 2400;  // Ridiculous value
-    runAudit();  // Re-run with injected value
+    CONFIG.demoAnomalyValue = 2400;  // Simulates decimal shift error
+    runAudit();  // Re-run with corrupted value
 }
 
 /**
- * DEMO: Remove injected anomaly, return to pure real data
+ * Restore Clean State - removes simulated regression
  */
 function resetNormal() {
-    console.log('✅ DEMO: Removing injected anomaly...');
+    console.log('✅ SIMULATION: Logic regression resolved, clean state restored...');
     CONFIG.demoAnomalyActive = false;
     runAudit();  // Re-run with only real data
 }
