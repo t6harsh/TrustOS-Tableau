@@ -487,6 +487,15 @@ body.state-loading {
     color: white;
 }
 
+.demo-btn.threshold {
+    background: #6366f1;
+    color: white;
+}
+
+.demo-btn.threshold.relaxed {
+    background: #8b5cf6;
+}
+
 .demo-btn:hover {
     transform: scale(1.05);
 }

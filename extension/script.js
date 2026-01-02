@@ -28,8 +28,12 @@ const CONFIG = {
     absoluteMin: 5,   // Below this is always an error
     absoluteMax: 50,  // Above this is always an error
 
-    // Z-Score threshold (standard deviations from mean)
-    zScoreThreshold: 2.5,
+    // Z-Score thresholds
+    zScoreThresholdStrict: 2.5,   // Default: Strict mode
+    zScoreThresholdRelaxed: 4.0,  // Relaxed: For expected business spikes (Black Friday, etc.)
+
+    // Active threshold mode (toggled by UI)
+    allowExpectedSpikes: false,
 
     // Which worksheet to monitor (null = auto-detect with metric field)
     targetWorksheet: null,
@@ -45,6 +49,11 @@ const CONFIG = {
     demoAnomalyActive: false,
     demoAnomalyValue: 2400
 };
+
+// Get current active threshold
+function getActiveThreshold() {
+    return CONFIG.allowExpectedSpikes ? CONFIG.zScoreThresholdRelaxed : CONFIG.zScoreThresholdStrict;
+}
 
 // State
 let isTableauInitialized = false;
@@ -338,7 +347,9 @@ function calculateStatistics(values) {
  * Determine status based on Z-Score and absolute bounds
  */
 function determineStatus(latestValue, stats, zScore) {
-    const confidence = Math.max(0, Math.min(100, 100 * (1 - zScore / CONFIG.zScoreThreshold)));
+    const threshold = getActiveThreshold();
+    const confidence = Math.max(0, Math.min(100, 100 * (1 - zScore / threshold)));
+    const modeLabel = CONFIG.allowExpectedSpikes ? '(Relaxed)' : '(Strict)';
 
     let status, isSafe, message, color;
 
@@ -347,28 +358,28 @@ function determineStatus(latestValue, stats, zScore) {
         status = 'LOCKED';
         isSafe = false;
         color = '#dc3545';
-        message = `CRITICAL: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Outside safe bounds(${CONFIG.absoluteMin} - ${CONFIG.absoluteMax} %).Dashboard Locked.`;
+        message = `CRITICAL: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Outside safe bounds (${CONFIG.absoluteMin}-${CONFIG.absoluteMax}%). Dashboard Locked.`;
     }
     // Check Z-Score (statistical anomaly)
-    else if (zScore > CONFIG.zScoreThreshold) {
+    else if (zScore > threshold) {
         status = 'LOCKED';
         isSafe = false;
         color = '#dc3545';
-        message = `ANOMALY: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% (Z - Score: ${zScore.toFixed(1)} > ${CONFIG.zScoreThreshold}). Dashboard Locked.`;
+        message = `ANOMALY: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% (Z-Score: ${zScore.toFixed(1)} > ${threshold} ${modeLabel}). Dashboard Locked.`;
     }
     // Warning zone
-    else if (zScore > CONFIG.zScoreThreshold * 0.7) {
+    else if (zScore > threshold * 0.7) {
         status = 'WARNING';
         isSafe = true;
         color = '#ffc107';
-        message = `WARNING: ${CONFIG.heroMetricName} at ${latestValue.toFixed(1)}% - Slightly unusual(Z - Score: ${zScore.toFixed(1)}).`;
+        message = `WARNING: ${CONFIG.heroMetricName} at ${latestValue.toFixed(1)}% - Slightly unusual (Z-Score: ${zScore.toFixed(1)}).`;
     }
     // Safe
     else {
         status = 'SAFE';
         isSafe = true;
         color = '#28a745';
-        message = `TrustOS Verified: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Normal(Z - Score: ${zScore.toFixed(1)}).`;
+        message = `TrustOS Verified: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Normal (Z-Score: ${zScore.toFixed(1)}).`;
     }
 
     return {
@@ -382,7 +393,8 @@ function determineStatus(latestValue, stats, zScore) {
         zScore: parseFloat(zScore.toFixed(2)),
         confidence: parseFloat(confidence.toFixed(1)),
         dataPoints: stats.count,
-        threshold: CONFIG.zScoreThreshold
+        threshold: threshold,
+        thresholdMode: CONFIG.allowExpectedSpikes ? 'relaxed' : 'strict'
     };
 }
 
@@ -533,6 +545,25 @@ function resetNormal() {
     console.log('✅ SIMULATION: Logic regression resolved, clean state restored...');
     CONFIG.demoAnomalyActive = false;
     runAudit();  // Re-run with only real data
+}
+
+/**
+ * Toggle between Strict and Relaxed threshold modes
+ * Addresses "Black Friday" problem - allows expected business spikes
+ */
+function toggleThresholdMode() {
+    CONFIG.allowExpectedSpikes = !CONFIG.allowExpectedSpikes;
+    const mode = CONFIG.allowExpectedSpikes ? 'RELAXED (Z > 4.0)' : 'STRICT (Z > 2.5)';
+    console.log(`🔧 Threshold mode changed to: ${mode}`);
+
+    // Update toggle button appearance
+    const toggleBtn = document.getElementById('thresholdToggle');
+    if (toggleBtn) {
+        toggleBtn.textContent = CONFIG.allowExpectedSpikes ? '🔓 Relaxed Mode' : '🔒 Strict Mode';
+        toggleBtn.classList.toggle('relaxed', CONFIG.allowExpectedSpikes);
+    }
+
+    runAudit();  // Re-run with new threshold
 }
 
 // Initialize
