@@ -500,6 +500,68 @@ body.state-loading {
     transform: scale(1.05);
 }
 
+/* Trust Timeline */
+.timeline-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.timeline-header {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 12px;
+}
+
+.trust-timeline {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.timeline-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.timeline-entry.safe {
+    border-left: 3px solid var(--color-safe);
+}
+
+.timeline-entry.warning {
+    border-left: 3px solid var(--color-warning);
+}
+
+.timeline-entry.locked {
+    border-left: 3px solid var(--color-locked);
+}
+
+.timeline-time {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.timeline-zscore {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.timeline-icon {
+    font-size: 12px;
+}
+
+.timeline-empty {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    font-style: italic;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
     .trustos-container {

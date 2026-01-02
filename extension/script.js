@@ -162,6 +162,17 @@ async function runAudit() {
         checkCount++;
         lastAnalysis = analysisResult;
 
+        // Add to trust timeline (keep last 5)
+        trustTimeline.unshift({
+            timestamp: new Date().toLocaleTimeString(),
+            metric: CONFIG.heroMetricName,
+            zScore: analysisResult.zScore,
+            status: analysisResult.status,
+            reason: analysisResult.isSafe ? 'Within bounds' : 'Anomaly detected'
+        });
+        if (trustTimeline.length > 5) trustTimeline.pop();
+        updateTimelineUI();
+
         console.log('📋 Analysis Result:', analysisResult);
 
         // Update UI based on result
@@ -499,7 +510,7 @@ function updateStats(data) {
  */
 async function setTableauParameter(isSafe) {
     if (!isTableauInitialized) {
-        console.log('📌 Would set TrustOS_Status to:', isSafe);
+        console.log('📌 Would set DecisionTrustState to:', isSafe);
         return;
     }
 
@@ -517,6 +528,34 @@ async function setTableauParameter(isSafe) {
     } catch (error) {
         console.error('❌ Parameter update failed:', error);
     }
+}
+
+/**
+ * Update the Trust Timeline UI display
+ */
+function updateTimelineUI() {
+    const container = document.getElementById('trust-timeline');
+    if (!container) return;
+
+    if (trustTimeline.length === 0) {
+        container.innerHTML = '<div class="timeline-empty">No evaluations yet</div>';
+        return;
+    }
+
+    const html = trustTimeline.map(entry => {
+        const statusIcon = entry.status === 'SAFE' ? '✅' :
+            entry.status === 'WARNING' ? '⚠️' : '⛔';
+        const statusClass = entry.status.toLowerCase();
+        return `
+            <div class="timeline-entry ${statusClass}">
+                <span class="timeline-time">${entry.timestamp}</span>
+                <span class="timeline-zscore">Z: ${entry.zScore.toFixed(1)}</span>
+                <span class="timeline-icon">${statusIcon}</span>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = html;
 }
 
 // ============================================================
