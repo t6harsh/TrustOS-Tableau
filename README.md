@@ -129,56 +129,84 @@ if (worstMetric.zScore > threshold) {
 
 ---
 
-## 🔍 Pattern Detection Heuristics
+## 🔍 Multi-Signal Detection Engine (v21)
 
-> **Note:** These are rule-based heuristics, not machine learning models. They use simple statistical signatures to *suggest* root causes.
+> **Note:** These are rule-based heuristics, not machine learning models. They use statistical signatures to detect and classify anomalies.
 
-When an anomaly triggers, TrustOS doesn't just say "Error". It attempts to classify the *type* of anomaly based on its statistical profile:
+TrustOS v21 uses a **multi-signal detection architecture** instead of relying on a single Z-Score threshold. This dramatically reduces false positives while catching more subtle issues.
 
-### Implemented Patterns
+### Signal Detectors (8 Total)
 
-| Pattern | Detection Rule | Suggested Root Cause |
-|---------|---------------|----------------------|
-| `DECIMAL_SHIFT` | Value > 50× mean | Unit/decimal conversion error in ETL |
-| `CURRENCY_FLIP` | Value ~1.2× mean | Currency conversion logic may have flipped |
-| `SEASONAL_SPIKE` | Z > 2, positive direction | Could be legitimate seasonality or duplicate rows |
-| `DATA_DROP` | Z > 2, negative direction | Missing data partition or broken filter |
-| `UNKNOWN` | No pattern matched | Manual investigation needed |
+| # | Signal | Detection Rule | Severity | Typical Cause |
+|---|--------|---------------|----------|---------------|
+| 1 | `Z_SCORE` | Z-Score > threshold | HIGH/CRITICAL | Statistical outlier |
+| 2 | `BUSINESS_RULE` | Value < 5% or > 60% | CRITICAL | Outside valid business range |
+| 3 | `RATE_OF_CHANGE` | >15% change from previous | HIGH/CRITICAL | Sudden data shift |
+| 4 | `DUPLICATE_INFLATION` | 8-15% above mean | MEDIUM | JOIN explosion / row duplication |
+| 5 | `CURRENCY_FLIP` | 15-25% above mean | MEDIUM | Currency conversion error (EUR/USD) |
+| 6 | `DECIMAL_SHIFT` | Value > 50× mean | CRITICAL | Unit/decimal conversion in ETL |
+| 7 | `NEGATIVE_VALUE` | Value < 0 | CRITICAL | Invalid negative for this metric |
+| 8 | `HIGH_ZSCORE` | Z > 70% of threshold | LOW | Approaching threshold (early warning) |
+
+### Decision Logic: WARNING vs LOCK
+
+TrustOS uses **consensus-based locking** rather than single-signal decisions:
+
+| Condition | Result | Rationale |
+|-----------|--------|-----------|
+| 1 LOW/MEDIUM signal | ⚠️ **WARNING** | Dashboard visible, user notified |
+| 2+ signals (any severity) | ⛔ **LOCK** | Consensus: multiple issues = real problem |
+| 1 CRITICAL signal | ⛔ **LOCK** | Immediate: critical issues bypass consensus |
+| Persistent anomaly (2/3 evals) | ⛔ **LOCK** | Pattern: intermittent issues get caught |
+
+### Persistence Confirmation
+
+TrustOS tracks the last 3 evaluations. If 2+ had signals, it locks—even if the current evaluation only has 1 signal. This catches:
+- Intermittent issues that appear/disappear
+- Race conditions during data loads
+- Flaky upstream jobs
+
+```javascript
+// Persistence check (runs every evaluation)
+const recentSignals = signalHistory.slice(-3);
+const anomalyCount = recentSignals.filter(count => count > 0).length;
+if (anomalyCount >= 2) {
+    status = 'LOCKED';  // Persistent issue detected
+}
+```
 
 ### How It Works (Honest Implementation)
 
 ```javascript
-function fingerprintAnomaly(latestValue, stats, zScore) {
+function runAllDetectors(latestValue, previousValue, stats, allValues) {
+    const signals = [];
+    const zScore = Math.abs(latestValue - stats.mean) / (stats.std || 1);
     const multiplier = latestValue / stats.mean;
     
-    if (multiplier > 50) {
-        return { pattern: 'DECIMAL_SHIFT', ... };
-    } else if (multiplier > 1.15 && multiplier < 1.25) {
-        return { pattern: 'CURRENCY_FLIP', ... };
+    // Signal 1: Z-Score
+    if (zScore > threshold) signals.push({ type: 'Z_SCORE', severity: 'HIGH' });
+    
+    // Signal 5: Currency Flip (15-25% above mean)
+    if (multiplier > 1.15 && multiplier <= 1.25) {
+        signals.push({ type: 'CURRENCY_FLIP', severity: 'MEDIUM' });
     }
-    // ... simple if-else rules, not ML
+    
+    // ... 6 more detectors (all simple if-else rules)
+    
+    return signals;
 }
 ```
 
-### Trend Monitoring
+### Related Metric Flagging (Trust Propagation)
 
-TrustOS tracks the last 10 Z-Scores and runs a simple linear regression to detect if values are *drifting* toward the threshold. If the slope is positive and significant, it displays a warning.
+When a metric fails, TrustOS flags related metrics as `SUSPECT`:
 
-> This is basic regression, not predictive AI. It's useful for demos but not production-grade forecasting.
+| If This Fails | These Become SUSPECT |
+|---------------|---------------------|
+| Gross Margin | Revenue, COGS, Profit |
+| Revenue | Gross Margin, Units Sold |
 
-### Related Metric Flagging
-
-When a metric fails, TrustOS flags related metrics as `SUSPECT` using a hardcoded relationship map:
-
-```javascript
-const METRIC_RELATIONSHIPS = {
-    'Gross_Margin': ['Revenue', 'COGS', 'Profit'],
-    'Revenue': ['Gross_Margin', 'Units_Sold'],
-    // ... static mapping
-};
-```
-
-> This is not a parsed dependency graph. It's a manually defined lookup table.
+> This uses a hardcoded relationship map, not automatic dependency parsing.
 
 ---
 
@@ -264,11 +292,11 @@ flowchart LR
 
 ---
 
-## 🎬 Demo
+## 🎬 Demo Controls (v21)
 
-### Demo Controls Panel
+### Demo Panel
 
-The extension includes a **live demo panel** for presentations:
+The extension includes a **live demo panel** integrated into the UI:
 
 **Threshold Slider (1.5 - 5.0)**
 | Setting | Behavior |
@@ -277,26 +305,39 @@ The extension includes a **live demo panel** for presentations:
 | 2.5 (Default) | Balanced - recommended for production |
 | 5.0 (Relaxed) | Low sensitivity - for seasonal/volatile data |
 
-**Injection Buttons**
-| Button | Simulated Corruption | Z-Score |
-|--------|---------------------|---------|
-| 🔍 **Subtle (28%)** | Currency conversion error | ~2.2 |
-| 📊 **Moderate (29.5%)** | Seasonal spike | ~2.9 |
-| 💥 **Extreme (2400%)** | Decimal shift error | ~847 |
-| ✅ **Reset** | Clean data | 0.0 |
+**Demo Injection Buttons**
 
-### Demo Flow
+| Button | Injected Value | Expected Signals | Expected Result |
+|--------|---------------|------------------|-----------------|
+| **Subtle** | 28.2% | CURRENCY_FLIP + HIGH_ZSCORE | ⛔ LOCK (2 signals) |
+| **Seasonal** | 29.5% | Z_SCORE (if > threshold) | ⛔ LOCK or ⚠️ WARNING |
+| **Dupe** | 25.9% | DUPLICATE_INFLATION | ⚠️ WARNING (1 signal) |
+| **Extreme** | 2400% | DECIMAL_SHIFT + Z_SCORE (CRITICAL) | ⛔ LOCK (immediate) |
+| **Reset** | Normal data | None | ✅ SAFE |
 
-| Time | Action | System Response |
-|------|--------|-----------------|
-| **0:00** | Dashboard loads | TrustOS evaluates metrics, Threshold: 2.5 |
-| **0:05** | Trust established | `DecisionTrustState: TRUSTED`, Confidence: 96% |
-| **0:20** | Click **Subtle (28%)** | Z-Score: 2.2 → ✅ TRUSTED (below 2.5) |
-| **0:30** | Drag slider to 2.0 | Same data now triggers ⛔ LOCKED |
-| **0:40** | Click **Extreme (2400%)** | Z-Score: 847 → ⛔ LOCKED (any threshold) |
-| **0:50** | Click **Reset** | Clean data → ✅ TRUSTED |
+### Persistence Behavior
 
-> **Key Demo Point:** Same data can be trusted or locked based on threshold. This demonstrates configurable sensitivity for different business contexts.
+> **Important:** TrustOS tracks signals across evaluations. If you see a WARNING, wait 30 seconds for the auto-poll—if the issue persists, it will LOCK.
+
+| Scenario | What Happens |
+|----------|--------------|
+| Click **Dupe** once | ⚠️ WARNING (1 signal) |
+| Wait 30s (auto-poll runs) | ⛔ LOCK (persistence: 2/3 evals had signals) |
+| Click **Reset** or **Force Unlock** | ✅ SAFE (clears history) |
+
+### Demo Flow (Recommended for Judges)
+
+| Step | Action | Expected Response |
+|------|--------|-------------------|
+| 1 | Load dashboard | ✅ SAFE, 0 signals, Confidence ~100% |
+| 2 | Click **Extreme** | ⛔ LOCK immediately (Z-Score ~1273) |
+| 3 | Click **Force Unlock** | ✅ SAFE (history cleared) |
+| 4 | Click **Subtle** | ⛔ LOCK (2 signals: CURRENCY_FLIP + HIGH_ZSCORE) |
+| 5 | Click **Reset** | ✅ SAFE |
+| 6 | Click **Dupe** | ⚠️ WARNING (shows multi-signal in action) |
+| 7 | Adjust threshold to 1.5 | Watch same data trigger different responses |
+
+> **Key Demo Point:** TrustOS uses consensus-based locking. One subtle signal = warning. Two signals = lock. This reduces false positives while catching real issues.
 
 ---
 
