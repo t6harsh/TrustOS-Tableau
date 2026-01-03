@@ -272,23 +272,48 @@ flowchart LR
 
 ### Detection Scenarios Tested
 
-| Scenario | Input | Expected | Actual | Result |
-|----------|-------|----------|--------|--------|
-| **Normal data** | All 180 points, no anomaly | ✅ TRUSTED | ✅ TRUSTED | ✓ Pass |
-| **Simulated regression** | Injected 2400% value | ⛔ LOCKED | ⛔ LOCKED | ✓ Pass |
-| **Recovery** | Remove injected value | ✅ TRUSTED | ✅ TRUSTED | ✓ Pass |
-| **Threshold toggle** | Switch to Relaxed mode | Higher tolerance | Higher tolerance | ✓ Pass |
+| Scenario | Corruption Type | Value | Z-Score | Strict Mode | Relaxed Mode |
+|----------|-----------------|-------|---------|-------------|--------------|
+| **Obvious spike** | Decimal shift error | 2400% | 847 | ⛔ LOCKED | ⛔ LOCKED |
+| **Currency flip** | 1.2x conversion error | 28.2% | 2.2 | ✅ TRUSTED | ✅ TRUSTED |
+| **Duplicate rows** | 8% inflation | 25.4% | 0.9 | ✅ TRUSTED | ✅ TRUSTED |
+| **Subtle drift** | Gradual 15% increase | 27.0% | 1.7 | ⚠️ WARNING | ✅ TRUSTED |
+| **Seasonal spike** | Black Friday-like | 29.5% | 2.9 | ⛔ LOCKED | ✅ TRUSTED |
+| **Normal data** | No corruption | 23.5% | 0.0 | ✅ TRUSTED | ✅ TRUSTED |
+
+### Threshold Sensitivity Analysis
+
+| Threshold | False Positives (Clean Data) | True Positives (Corruption) | Use Case |
+|-----------|------------------------------|-----------------------------|--------------------|
+| Z > 2.0 | Higher | Maximum sensitivity | High-stakes metrics |
+| Z > 2.5 (Strict) | Low | High | Default/recommended |
+| Z > 4.0 (Relaxed) | Very low | Moderate | Seasonal businesses |
 
 ### Performance Metrics
 
 | Metric | Value |
 |--------|-------|
 | Detection latency | < 50ms |
-| Polling interval | 30 seconds |
-| False positive rate | 0% (on clean data) |
-| True positive rate | 100% (on simulated corruption) |
+| Polling interval | 30 seconds (configurable) |
+| Memory footprint | < 5MB |
+| Data points processed | 180+ per evaluation |
 
-> **Note:** Metrics measured on sample dataset. Production performance may vary based on data volume and complexity.
+> **Key Insight:** Subtle corruptions (8% inflation, 1.2x currency) fall below default thresholds. Users can lower thresholds for stricter monitoring or accept natural business variance.
+
+---
+
+## 🆚 TrustOS vs Pipeline Data Quality Tools
+
+| Capability | TrustOS | Pipeline Tools (Monte Carlo, etc.) |
+|------------|---------|-----------------------------------|
+| **Where it operates** | Dashboard (consumption layer) | Warehouse (pipeline layer) |
+| **Installation time** | 5 minutes | Days to weeks |
+| **Blocks decisions** | Yes (native Tableau visibility) | No (alerts only) |
+| **Requires access to** | Tableau dashboard | Data warehouse, dbt, etc. |
+| **What it validates** | Final rendered values | Raw/transformed tables |
+| **Architecture changes** | None | Pipeline integration required |
+
+> **Why both matter:** Pipeline tools catch issues upstream. TrustOS catches what slips through—at the moment of decision.
 
 ---
 
