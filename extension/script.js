@@ -13,13 +13,15 @@
 // CONFIGURATION
 // ============================================================
 const CONFIG = {
-    heroMetricField: 'Gross_Margin',
-    heroMetricName: 'Gross Margin',
+    // Primary metric candidates (tries in order, uses first found)
+    heroMetricCandidates: ['Profit Ratio', 'Profit_Ratio', 'Gross_Margin', 'Gross Margin', 'Margin'],
+    heroMetricField: 'Profit Ratio',  // Default for Superstore
+    heroMetricName: 'Profit Ratio',
     timeField: 'Date',
 
-    // Business Rule Bounds
-    absoluteMin: 5,
-    absoluteMax: 60,
+    // Business Rule Bounds (adjusted for Superstore's Profit Ratio ~5-20%)
+    absoluteMin: -10,    // Profit can go negative
+    absoluteMax: 40,     // Very high profit ratio is suspicious
 
     // Z-Score Settings
     zScoreThreshold: 2.5,
@@ -187,9 +189,29 @@ async function analyzeWorksheetData() {
 
     const rows = dataTable.data;
     const columns = dataTable.columns;
-    const metricColIndex = findColumnIndex(columns, CONFIG.heroMetricField);
 
-    if (metricColIndex === -1) throw new Error(`Metric "${CONFIG.heroMetricField}" not found.`);
+    // Auto-detect metric: try candidates in order
+    let metricColIndex = -1;
+    let detectedMetric = null;
+    for (const candidate of CONFIG.heroMetricCandidates) {
+        metricColIndex = findColumnIndex(columns, candidate);
+        if (metricColIndex !== -1) {
+            detectedMetric = candidate;
+            CONFIG.heroMetricField = candidate;
+            CONFIG.heroMetricName = candidate;
+            console.log(`📊 TrustOS: Using metric "${candidate}"`);
+            break;
+        }
+    }
+
+    // Fallback to original config if no candidate found
+    if (metricColIndex === -1) {
+        metricColIndex = findColumnIndex(columns, CONFIG.heroMetricField);
+    }
+
+    if (metricColIndex === -1) {
+        throw new Error(`Metric not found. Tried: ${CONFIG.heroMetricCandidates.join(', ')}`);
+    }
 
     let values = [];
     for (const row of rows) {
