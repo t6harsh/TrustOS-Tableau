@@ -78,18 +78,18 @@ let signalHistory = [];
 // ============================================================
 const DETECTOR_REGISTRY = {
     // STATISTICAL DETECTORS (Weight: 40%)
-    Z_SCORE: { category: 'STATISTICAL', basePenalty: 30, criticalPenalty: 50 },
-    HIGH_ZSCORE: { category: 'STATISTICAL', basePenalty: 10, criticalPenalty: 20 },
+    Z_SCORE: { category: 'STATISTICAL', basePenalty: 80, criticalPenalty: 100 },
+    HIGH_ZSCORE: { category: 'STATISTICAL', basePenalty: 40, criticalPenalty: 60 },
 
     // BUSINESS DETECTORS (Weight: 35%)
-    BUSINESS_RULE: { category: 'BUSINESS', basePenalty: 40, criticalPenalty: 60 },
-    NEGATIVE_VALUE: { category: 'BUSINESS', basePenalty: 50, criticalPenalty: 70 },
-    DECIMAL_SHIFT: { category: 'BUSINESS', basePenalty: 60, criticalPenalty: 80 },
+    BUSINESS_RULE: { category: 'BUSINESS', basePenalty: 90, criticalPenalty: 100 },
+    NEGATIVE_VALUE: { category: 'BUSINESS', basePenalty: 100, criticalPenalty: 100 },
+    DECIMAL_SHIFT: { category: 'BUSINESS', basePenalty: 100, criticalPenalty: 100 },
 
     // TEMPORAL DETECTORS (Weight: 25%)
-    RATE_OF_CHANGE: { category: 'TEMPORAL', basePenalty: 20, criticalPenalty: 35 },
-    DUPLICATE_INFLATION: { category: 'TEMPORAL', basePenalty: 15, criticalPenalty: 25 },
-    CURRENCY_FLIP: { category: 'TEMPORAL', basePenalty: 15, criticalPenalty: 25 }
+    RATE_OF_CHANGE: { category: 'TEMPORAL', basePenalty: 60, criticalPenalty: 80 },
+    DUPLICATE_INFLATION: { category: 'TEMPORAL', basePenalty: 50, criticalPenalty: 70 },
+    CURRENCY_FLIP: { category: 'TEMPORAL', basePenalty: 50, criticalPenalty: 70 }
 };
 
 // ============================================================
