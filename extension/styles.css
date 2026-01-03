@@ -417,12 +417,21 @@ body.state-loading {
 .safety-content {
     text-align: center;
     color: white;
-    padding: 40px;
+    padding: 24px;
+    max-width: 600px;
+    width: 100%;
+}
+
+.safety-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 12px;
 }
 
 .safety-icon {
-    font-size: 80px;
-    margin-bottom: 24px;
+    font-size: 48px;
     animation: pulseIcon 2s ease-in-out infinite;
 }
 
@@ -441,19 +450,70 @@ body.state-loading {
 }
 
 .safety-title {
-    font-size: 32px;
+    font-size: 24px;
     font-weight: 700;
-    margin-bottom: 16px;
     text-transform: uppercase;
-    letter-spacing: 4px;
+    letter-spacing: 3px;
+    margin: 0;
 }
 
 .safety-message {
-    font-size: 16px;
-    max-width: 500px;
-    margin: 0 auto 32px;
-    line-height: 1.6;
+    font-size: 13px;
+    margin: 0 auto 16px;
+    line-height: 1.5;
     color: rgba(255, 255, 255, 0.9);
+}
+
+/* Safety Insights Panel */
+.safety-insights {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.safety-insight-header {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.safety-insight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px;
+    margin-bottom: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #f87171;
+}
+
+.safety-insight-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.safety-insight-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.safety-insight-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.safety-insight-desc {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 2px;
+    word-wrap: break-word;
 }
 
 /* Demo Controls (for hackathon presentation) */

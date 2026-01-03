@@ -129,12 +129,43 @@
     <!-- Safety Mode Full-Screen Overlay -->
     <div id="safety-overlay" class="safety-overlay">
         <div class="safety-content">
-            <div class="safety-icon">⛔</div>
-            <h1 class="safety-title">Safety Mode Active</h1>
+            <div class="safety-header">
+                <div class="safety-icon">⛔</div>
+                <h1 class="safety-title">Safety Mode Active</h1>
+            </div>
             <p id="safety-message" class="safety-message">
-                Critical anomaly detected. Dashboard visibility has been restricted to prevent decision-making on
-                potentially corrupted data.
+                Critical anomaly detected. Dashboard visibility restricted.
             </p>
+
+            <!-- AI Insights on Lock Screen -->
+            <div class="safety-insights">
+                <div class="safety-insight-header">🧠 AI Analysis</div>
+
+                <div id="safety-fingerprint" class="safety-insight-item">
+                    <span id="safety-fingerprint-icon" class="safety-insight-icon">🔍</span>
+                    <div class="safety-insight-content">
+                        <div id="safety-fingerprint-pattern" class="safety-insight-title">Analyzing...</div>
+                        <div id="safety-fingerprint-cause" class="safety-insight-desc">--</div>
+                    </div>
+                </div>
+
+                <div id="safety-prediction" class="safety-insight-item">
+                    <span class="safety-insight-icon">🔮</span>
+                    <div class="safety-insight-content">
+                        <div id="safety-prediction-title" class="safety-insight-title">Trend</div>
+                        <div id="safety-prediction-msg" class="safety-insight-desc">--</div>
+                    </div>
+                </div>
+
+                <div id="safety-propagation" class="safety-insight-item">
+                    <span class="safety-insight-icon">🌐</span>
+                    <div class="safety-insight-content">
+                        <div class="safety-insight-title">Trust Cascade</div>
+                        <div id="safety-propagation-msg" class="safety-insight-desc">--</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="action-buttons">
                 <button class="btn btn-primary" onclick="runAudit()">🔄 Re-Check Now</button>
                 <button class="btn btn-success" onclick="resetNormal()">✅ Reset to Normal</button>
@@ -164,8 +195,8 @@
         </div>
     </div>
 
-    <!-- TrustOS Script (v13 for cache bust) -->
-    <script src="script.js?v=13"></script>
+    <!-- TrustOS Script (v14 for cache bust) -->
+    <script src="script.js?v=14"></script>
 </body>
 
 </html>

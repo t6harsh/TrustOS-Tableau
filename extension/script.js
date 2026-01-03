@@ -731,9 +731,10 @@ function updateTimelineUI() {
 
 /**
  * Update Novel Insights UI with fingerprint, prediction, and propagation
+ * Updates BOTH the main panel AND the safety overlay
  */
 function updateNovelInsightsUI(data) {
-    // Fingerprint Panel
+    // Fingerprint Panel (main)
     const fingerprintPanel = document.getElementById('fingerprint-panel');
     if (fingerprintPanel && data.fingerprint) {
         fingerprintPanel.classList.remove('hidden');
@@ -746,7 +747,7 @@ function updateNovelInsightsUI(data) {
         fingerprintPanel.classList.add('hidden');
     }
 
-    // Prediction Panel
+    // Prediction Panel (main)
     const predictionPanel = document.getElementById('prediction-panel');
     if (predictionPanel && data.prediction) {
         document.getElementById('prediction-icon').textContent = data.prediction.icon || '🔮';
@@ -755,7 +756,7 @@ function updateNovelInsightsUI(data) {
         predictionPanel.classList.toggle('warning', data.prediction.prediction === 'APPROACHING_FAILURE');
     }
 
-    // Propagation Panel
+    // Propagation Panel (main)
     const propagationPanel = document.getElementById('propagation-panel');
     if (propagationPanel && data.propagation) {
         if (!data.isSafe) {
@@ -766,6 +767,31 @@ function updateNovelInsightsUI(data) {
         } else {
             propagationPanel.classList.add('hidden');
         }
+    }
+
+    // === SAFETY OVERLAY INSIGHTS ===
+    // Fingerprint on safety overlay
+    if (data.fingerprint) {
+        const safetyFingerprintIcon = document.getElementById('safety-fingerprint-icon');
+        const safetyFingerprintPattern = document.getElementById('safety-fingerprint-pattern');
+        const safetyFingerprintCause = document.getElementById('safety-fingerprint-cause');
+        if (safetyFingerprintIcon) safetyFingerprintIcon.textContent = data.fingerprint.icon;
+        if (safetyFingerprintPattern) safetyFingerprintPattern.textContent = data.fingerprint.pattern.replace(/_/g, ' ');
+        if (safetyFingerprintCause) safetyFingerprintCause.textContent = data.fingerprint.rootCause;
+    }
+
+    // Prediction on safety overlay
+    if (data.prediction) {
+        const safetyPredictionTitle = document.getElementById('safety-prediction-title');
+        const safetyPredictionMsg = document.getElementById('safety-prediction-msg');
+        if (safetyPredictionTitle) safetyPredictionTitle.textContent = data.prediction.prediction || 'Trend';
+        if (safetyPredictionMsg) safetyPredictionMsg.textContent = data.prediction.message;
+    }
+
+    // Propagation on safety overlay
+    if (data.propagation) {
+        const safetyPropagationMsg = document.getElementById('safety-propagation-msg');
+        if (safetyPropagationMsg) safetyPropagationMsg.textContent = data.propagation.message;
     }
 }
 
