@@ -247,6 +247,22 @@ function runAllDetectors(latestValue, previousValue, stats, allValues) {
 }
 ```
 
+### 🧠 Transparent UX & Explainability
+
+TrustOS doesn't just block; it explains *why*.
+
+#### 1. Detector Contribution Transparency
+The UI displays a breakdown of exactly which signals lowered the Trust Score and by how much.
+- **Visual:** Horizontal bars with severity color-coding
+- **Detail:** Shows specific penalty values (e.g., `-25` for Critical)
+- **Benefit:** Helps users understand if the issue is statistical (Z-score) or data quality (duplicates).
+
+#### 2. Trust Score Trend (Sparkline)
+A real-time sparkline tracks the Trust Score over the last 10 evaluations.
+- **Green Bars:** Safe state (≥60)
+- **Red Bars:** Lock state (<60)
+- **Benefit:** Allows users to distinguish between transient blips and persistent degradation.
+
 ### Related Metric Flagging (Trust Propagation)
 
 When a metric fails, TrustOS flags related metrics as `SUSPECT`:
