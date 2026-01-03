@@ -227,17 +227,37 @@ flowchart LR
 
 ## 🎬 Demo
 
+### Demo Controls Panel
+
+The extension includes a **live demo panel** (bottom-right) for presentations:
+
+**Threshold Slider (1.5 - 5.0)**
+| Setting | Behavior |
+|---------|----------|
+| 1.5 (Strict) | High sensitivity - catches subtle anomalies |
+| 2.5 (Default) | Balanced - recommended for production |
+| 5.0 (Relaxed) | Low sensitivity - for seasonal/volatile data |
+
+**Injection Buttons**
+| Button | Simulated Corruption | Z-Score |
+|--------|---------------------|---------|
+| 🔍 **Subtle (28%)** | Currency conversion error | ~2.2 |
+| 📊 **Moderate (29.5%)** | Seasonal spike | ~2.9 |
+| 💥 **Extreme (2400%)** | Decimal shift error | ~847 |
+| ✅ **Reset** | Clean data | 0.0 |
+
+### Demo Flow
+
 | Time | Action | System Response |
 |------|--------|-----------------|
-| **0:00** | Dashboard loads | TrustOS evaluates 3 metrics across 180 data points |
+| **0:00** | Dashboard loads | TrustOS evaluates metrics, Threshold: 2.5 |
 | **0:05** | Trust established | `DecisionTrustState: TRUSTED`, Confidence: 96% |
-| **0:20** | **Simulate Logic Regression** | Injects corrupted value into data stream |
-| **0:22** | Re-evaluation triggers | Z-Score spikes to 847 |
-| **0:25** | **Trust Revoked** | Dashboard locked, AI agent access denied |
-| **0:40** | **Restore Clean State** | Remove corrupted data |
-| **0:45** | Trust re-established | Dashboard unlocked, Confidence: 94% |
+| **0:20** | Click **Subtle (28%)** | Z-Score: 2.2 → ✅ TRUSTED (below 2.5) |
+| **0:30** | Drag slider to 2.0 | Same data now triggers ⛔ LOCKED |
+| **0:40** | Click **Extreme (2400%)** | Z-Score: 847 → ⛔ LOCKED (any threshold) |
+| **0:50** | Click **Reset** | Clean data → ✅ TRUSTED |
 
-> **Note:** The simulation injects real data that the statistical engine catches—not UI theater.
+> **Key Demo Point:** Same data can be trusted or locked based on threshold. This demonstrates configurable sensitivity for different business contexts.
 
 ---
 
