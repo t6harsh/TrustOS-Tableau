@@ -51,7 +51,7 @@ const CONFIG = {
 
     // Trust Score Thresholds (v22.1 - more responsive)
     trustScoreWarning: 90,   // Below this = WARNING
-    trustScoreLock: 65,      // Below this = LOCK
+    trustScoreLock: 70,      // Below this = LOCK
 
     targetWorksheet: null,
     safetyParameter: 'DecisionTrustState',
