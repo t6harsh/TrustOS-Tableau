@@ -783,26 +783,26 @@ async function setTableauParameter(isSafe) {
 }
 
 // ============================================================
-// DEMO CONTROLS
+// DEMO CONTROLS (Calibrated for Superstore Profit Ratio ~12%)
 // ============================================================
 window.injectExtreme = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 2400;
+    CONFIG.demoAnomalyValue = 2.0;  // 200% profit ratio = extreme
     runAudit();
 };
 window.injectModerate = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 29.5;
+    CONFIG.demoAnomalyValue = 0.18;  // 18% profit ratio = moderate spike
     runAudit();
 };
 window.injectSubtle = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 28.2;
+    CONFIG.demoAnomalyValue = 0.14;  // 14% profit ratio = subtle
     runAudit();
 };
 window.injectDuplicate = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 25.9;
+    CONFIG.demoAnomalyValue = 0.13;  // 13% profit ratio = duplicate inflation
     runAudit();
 };
 window.resetNormal = function () {
