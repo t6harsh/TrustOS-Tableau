@@ -395,15 +395,15 @@ The extension includes a **live demo panel** integrated into the UI:
 
 ## 📊 Validation & Evidence
 
-### Detection Accuracy (Tested on sample_data.csv)
+### Detection Accuracy (Tested on Tableau Superstore)
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **True Positives** | 12/12 | All injected corruptions detected |
-| **False Positives** | 0 | Normal data never triggered lock |
-| **Precision** | 100% | Every lock was a real issue |
-| **Recall** | 100% | No injected corruption was missed |
-| **False Negative Rate** | 0% | Zero missed anomalies in testing |
+| Metric | Result | Notes |
+|--------|--------|-------|
+| **True Positives** | 12/12 | All tested scenarios detected |
+| **False Positives** | 0 observed | Normal data never triggered false lock in testing |
+| **Precision** | High | Every lock corresponded to a real anomaly |
+| **Recall** | High | No injected corruption was missed in test set |
+| **False Negative Rate** | Low | No missed anomalies observed in testing |
 
 > **Methodology:** Tested with 12 documented corruption scenarios across all 9 detectors. Each scenario designed to simulate real-world ETL failures.
 
@@ -448,8 +448,8 @@ TrustOS was tested on **Tableau's Superstore dataset** to demonstrate real-world
 | Scenario | Without TrustOS | With TrustOS |
 |----------|-----------------|--------------|
 | User sees corrupted data | ✅ Visible | ❌ Blocked |
-| Risk of bad decision | HIGH | ZERO |
-| Time to discover issue | Hours/days | 0 seconds |
+| Risk of bad decision | HIGH | Significantly reduced |
+| Time to discover issue | Hours/days | Seconds |
 | Who catches it | Downstream user | TrustOS |
 | Audit trail | None | Timestamped log |
 
@@ -545,7 +545,7 @@ TrustOS-Tableau/
 │   ├── styles.css          # Emerald Enterprise Theme
 │   ├── trustos.trex        # Tableau extension manifest
 │   └── tableau.extensions.1.latest.min.js
-├── sample_data.csv         # 180 rows test data
+├── (Uses Tableau Superstore)  # Built-in Tableau dataset
 └── README.md
 ```
 
