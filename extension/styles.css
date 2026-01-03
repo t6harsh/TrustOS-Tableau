@@ -4,15 +4,15 @@
  */
 
 :root {
-    /* Enterprise Dark Theme */
-    --bg-dark: #0f172a;
-    /* Slate 900 */
-    --bg-card: #1e293b;
-    /* Slate 800 */
-    --text-main: #f8fafc;
-    /* Slate 50 */
-    --text-muted: #94a3b8;
-    /* Slate 400 */
+    /* Enterprise Dark Theme - Emerald Edition */
+    --bg-dark: #022c22;
+    /* Emerald 950 */
+    --bg-card: #064e3b;
+    /* Emerald 900 */
+    --text-main: #ecfdf5;
+    /* Emerald 50 */
+    --text-muted: #6ee7b7;
+    /* Emerald 300 (muted) */
 
     /* Semantic Colors */
     --c-safe: #10b981;
@@ -54,7 +54,7 @@ body {
     max-width: 650px;
     /* Constrain on wide screens, fill on small */
     margin: 0 auto;
-    background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 60%);
+    background: radial-gradient(circle at top right, #065f46 0%, #022c22 70%);
 }
 
 .app-header {
@@ -63,9 +63,9 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(2, 44, 34, 0.85);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(16, 185, 129, 0.1);
     z-index: 100;
 }
 
