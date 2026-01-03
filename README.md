@@ -543,7 +543,7 @@ TrustOS-Tableau/
 |----------|----------------|--------------|
 | **Innovation (40%)** | `DecisionTrustState` as a platform primitive; circuit breaker for BI | 8-9 |
 | **Technical (30%)** | Multi-metric Z-Score, trend detection, Extensions API integration | 8-9 |
-| **Impact (20%)** | Prevents human + AI decisions on bad data at consumption time | 8-9 |
+| **Impact (20%)** | Blocks access to dashboards with detected anomalies at consumption time | 8-9 |
 | **UX (10%)** | Emerald Enterprise theme, vertical layout, professional lock screen | 9-10 |
 
 ---
