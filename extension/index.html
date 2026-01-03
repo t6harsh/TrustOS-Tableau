@@ -129,6 +129,28 @@
                         <div class="i-desc" id="propagation-message">--</div>
                     </div>
                 </div>
+
+                <!-- Detector Contribution Transparency -->
+                <div id="contribution-panel" class="insight-row hidden">
+                    <div class="i-icon">📊</div>
+                    <div class="i-content">
+                        <div class="i-title">Detector Contributions</div>
+                        <div id="contribution-bars" class="contribution-bars">
+                            <!-- Will be populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trust Score Trend Sparkline -->
+                <div id="trend-panel" class="insight-row">
+                    <div class="i-icon">📈</div>
+                    <div class="i-content">
+                        <div class="i-title">Trust Score Trend</div>
+                        <div id="trust-sparkline" class="sparkline">
+                            <!-- Will be populated by JS -->
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <div class="spacer" style="height: 40px;"></div>
@@ -160,8 +182,8 @@
         </div>
     </div>
 
-    <!-- Script v22 (Ensemble Detection) -->
-    <script src="script.js?v=22"></script>
+    <!-- Script v23 (Detector Transparency + Sparkline) -->
+    <script src="script.js?v=23"></script>
 </body>
 
 </html>

@@ -512,3 +512,92 @@ input[type=range] {
         transform: scale(1);
     }
 }
+
+/* Detector Contribution Bars */
+.contribution-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.contrib-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.contrib-label {
+    font-size: 10px;
+    color: #94a3b8;
+    width: 80px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.contrib-bar {
+    flex: 1;
+    height: 8px;
+    background: #334155;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.contrib-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.contrib-fill.critical {
+    background: #ef4444;
+}
+
+.contrib-fill.high {
+    background: #f97316;
+}
+
+.contrib-fill.medium {
+    background: #eab308;
+}
+
+.contrib-fill.low {
+    background: #22c55e;
+}
+
+.contrib-value {
+    font-size: 10px;
+    color: #94a3b8;
+    width: 30px;
+    text-align: right;
+}
+
+/* Trust Score Sparkline */
+.sparkline {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 30px;
+    margin-top: 8px;
+}
+
+.spark-bar {
+    flex: 1;
+    min-width: 6px;
+    max-width: 12px;
+    border-radius: 2px 2px 0 0;
+    transition: height 0.3s ease, background 0.3s ease;
+}
+
+.spark-bar.safe {
+    background: var(--c-safe);
+}
+
+.spark-bar.warning {
+    background: #eab308;
+}
+
+.spark-bar.lock {
+    background: #ef4444;
+}

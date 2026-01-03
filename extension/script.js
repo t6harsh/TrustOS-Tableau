@@ -163,6 +163,10 @@ async function runAudit() {
         if (trustTimeline.length > 5) trustTimeline.pop();
         updateTimelineUI();
 
+        // Update new transparency UI elements
+        updateContributionBars(analysisResult.signals, analysisResult.categoryBreakdown);
+        updateSparkline(analysisResult.trustScore);
+
         updateUIState(analysisResult.status.toLowerCase(), analysisResult);
         await setTableauParameter(analysisResult.isSafe);
 
@@ -716,6 +720,61 @@ function updateTimelineUI() {
             </span>
         </div>
     `).join('');
+}
+
+// Detector Contribution Bars (shows which signals impacted Trust Score)
+function updateContributionBars(signals, categoryBreakdown) {
+    const container = document.getElementById('contribution-bars');
+    const panel = document.getElementById('contribution-panel');
+    if (!container || !panel) return;
+
+    if (!signals || signals.length === 0) {
+        panel.classList.add('hidden');
+        return;
+    }
+
+    panel.classList.remove('hidden');
+
+    // Build contribution rows
+    let html = '';
+    for (const signal of signals.slice(0, 5)) {  // Max 5 bars
+        const severityClass = signal.severity.toLowerCase();
+        const penalty = signal.severity === 'CRITICAL' ? 25 : signal.severity === 'HIGH' ? 15 : signal.severity === 'MEDIUM' ? 10 : 5;
+        const widthPct = Math.min(penalty * 4, 100);  // Scale for visibility
+
+        html += `
+            <div class="contrib-row">
+                <span class="contrib-label">${signal.type}</span>
+                <div class="contrib-bar">
+                    <div class="contrib-fill ${severityClass}" style="width: ${widthPct}%"></div>
+                </div>
+                <span class="contrib-value">-${penalty}</span>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+// Trust Score Sparkline (last 10 evaluations)
+let trustScoreHistory = [];
+function updateSparkline(trustScore) {
+    const container = document.getElementById('trust-sparkline');
+    if (!container) return;
+
+    // Store history
+    trustScoreHistory.push(trustScore);
+    if (trustScoreHistory.length > 10) trustScoreHistory.shift();
+
+    // Build sparkline bars
+    let html = '';
+    for (const score of trustScoreHistory) {
+        const height = Math.max(score * 0.3, 3);  // Scale 0-100 to 0-30px
+        const colorClass = score >= 90 ? 'safe' : score >= 60 ? 'warning' : 'lock';
+        html += `<div class="spark-bar ${colorClass}" style="height: ${height}px"></div>`;
+    }
+
+    container.innerHTML = html;
 }
 
 function updateNovelInsightsUI(data) {
