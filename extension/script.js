@@ -1,12 +1,12 @@
 /**
- * TrustOS v21 - Enhanced Multi-Signal Detection Engine
+ * TrustOS v22 - Ensemble Detection with Weighted Trust Score
  * 
- * Core Capabilities:
- * 1. Multi-signal anomaly detection (not just Z-Score)
- * 2. Rate-of-change detection (DoD comparison)
- * 3. Business-rule constraints (margins > 60%, negative values)
- * 4. Persistence confirmation (2/3 evaluations before lock)
- * 5. Consensus-based decision making
+ * Architecture Upgrade:
+ * 1. Ensemble detection with 3 detector categories (STATISTICAL, BUSINESS, TEMPORAL)
+ * 2. Weighted voting mechanism (each category has different weight)
+ * 3. Aggregate TrustScore (0-100) instead of binary decision
+ * 4. Row-level duplicate detection via getSummaryDataAsync
+ * 5. Persistence + Consensus still active
  */
 
 // ============================================================
@@ -18,8 +18,8 @@ const CONFIG = {
     timeField: 'Date',
 
     // Business Rule Bounds
-    absoluteMin: 5,      // Below this is always suspicious
-    absoluteMax: 60,     // Margins > 60% are suspicious for most businesses
+    absoluteMin: 5,
+    absoluteMax: 60,
 
     // Z-Score Settings
     zScoreThreshold: 2.5,
@@ -27,19 +27,29 @@ const CONFIG = {
     zScoreThresholdMax: 5.0,
 
     // Rate of Change Settings
-    rocThreshold: 0.15,  // 15% change day-over-day is suspicious
+    rocThreshold: 0.15,
 
     // Duplicate Inflation Detection
-    inflationMin: 1.08,  // 8% inflation
-    inflationMax: 1.15,  // 15% inflation
+    inflationMin: 1.08,
+    inflationMax: 1.15,
 
     // Persistence Settings
-    persistenceRequired: 2,    // Need 2 out of 3 evaluations to confirm lock
-    persistenceWindow: 3,      // Look at last 3 evaluations
+    persistenceRequired: 2,
+    persistenceWindow: 3,
 
-    // Consensus Settings
-    signalsForWarning: 1,     // 1 signal = warning
-    signalsForLock: 2,         // 2+ signals = lock
+    // ===========================================
+    // ENSEMBLE DETECTION WEIGHTS (v22)
+    // ===========================================
+    // Total weight should sum to 1.0
+    ensembleWeights: {
+        STATISTICAL: 0.40,   // Z-Score, High Z-Score
+        BUSINESS: 0.35,      // Business Rules, Negative, Decimal Shift
+        TEMPORAL: 0.25       // Rate of Change, Duplicate Inflation, Currency Flip
+    },
+
+    // Trust Score Thresholds
+    trustScoreWarning: 70,   // Below this = WARNING
+    trustScoreLock: 40,      // Below this = LOCK
 
     targetWorksheet: null,
     safetyParameter: 'DecisionTrustState',
@@ -60,16 +70,33 @@ let checkCount = 0;
 let currentWorksheet = null;
 let lastAnalysis = null;
 let trustTimeline = [];
+let valueHistory = [];
+let signalHistory = [];
 
-// Historical data for rate-of-change and persistence
-let valueHistory = [];       // Last N values for DoD/WoW
-let signalHistory = [];      // Last N signal counts for persistence
+// ============================================================
+// DETECTOR REGISTRY (Ensemble Architecture)
+// ============================================================
+const DETECTOR_REGISTRY = {
+    // STATISTICAL DETECTORS (Weight: 40%)
+    Z_SCORE: { category: 'STATISTICAL', basePenalty: 30, criticalPenalty: 50 },
+    HIGH_ZSCORE: { category: 'STATISTICAL', basePenalty: 10, criticalPenalty: 20 },
+
+    // BUSINESS DETECTORS (Weight: 35%)
+    BUSINESS_RULE: { category: 'BUSINESS', basePenalty: 40, criticalPenalty: 60 },
+    NEGATIVE_VALUE: { category: 'BUSINESS', basePenalty: 50, criticalPenalty: 70 },
+    DECIMAL_SHIFT: { category: 'BUSINESS', basePenalty: 60, criticalPenalty: 80 },
+
+    // TEMPORAL DETECTORS (Weight: 25%)
+    RATE_OF_CHANGE: { category: 'TEMPORAL', basePenalty: 20, criticalPenalty: 35 },
+    DUPLICATE_INFLATION: { category: 'TEMPORAL', basePenalty: 15, criticalPenalty: 25 },
+    CURRENCY_FLIP: { category: 'TEMPORAL', basePenalty: 15, criticalPenalty: 25 }
+};
 
 // ============================================================
 // INITIALIZATION
 // ============================================================
 async function init() {
-    console.log('🛡️ TrustOS v21 - Enhanced Detection Engine Initializing...');
+    console.log('🛡️ TrustOS v22 - Ensemble Detection Engine Initializing...');
 
     if (typeof tableau === 'undefined') {
         updateUIState('standalone');
@@ -123,14 +150,13 @@ async function runAudit() {
         checkCount++;
         lastAnalysis = analysisResult;
 
-        // Add to timeline
         trustTimeline.unshift({
             timestamp: new Date().toLocaleTimeString(),
             metric: CONFIG.heroMetricName,
-            zScore: analysisResult.zScore,
+            trustScore: analysisResult.trustScore,
             status: analysisResult.status,
             signals: analysisResult.signalsFired,
-            reason: analysisResult.signals.join(', ') || 'Within bounds'
+            reason: analysisResult.signals.join(', ') || 'All checks passed'
         });
         if (trustTimeline.length > 5) trustTimeline.pop();
         updateTimelineUI();
@@ -145,7 +171,7 @@ async function runAudit() {
 }
 
 // ============================================================
-// DATA ANALYSIS - MULTI-SIGNAL ENGINE
+// DATA ANALYSIS - ENSEMBLE ENGINE
 // ============================================================
 async function analyzeWorksheetData() {
     try { await currentWorksheet.clearSelectedMarksAsync(); } catch (e) { }
@@ -173,58 +199,116 @@ async function analyzeWorksheetData() {
 
     if (values.length === 0) throw new Error('No numeric values found');
 
-    // CRITICAL: Calculate baseline stats BEFORE injecting demo value
-    // This ensures anomaly detection compares against clean baseline
+    // Baseline stats from clean data
     const stats = calculateStatistics(values);
-    const previousValue = values[values.length - 1];  // Last real value
+    const previousValue = values[values.length - 1];
 
-    // Now determine the "latest" value to test
+    // Check for duplicate rows (v22 row-level analysis)
+    const duplicateInfo = detectDuplicateRows(rows);
+
     let latestValue;
     if (CONFIG.demoAnomalyActive) {
-        latestValue = CONFIG.demoAnomalyValue;  // Test the anomaly against clean baseline
+        latestValue = CONFIG.demoAnomalyValue;
     } else {
         latestValue = values[values.length - 1];
     }
 
-    // Store in history for persistence checking
     valueHistory.push(latestValue);
     if (valueHistory.length > 10) valueHistory.shift();
 
     // ========================================
-    // MULTI-SIGNAL DETECTION
+    // RUN ALL DETECTORS
     // ========================================
-    const signals = runAllDetectors(latestValue, previousValue, stats, values);
+    const signals = runAllDetectors(latestValue, previousValue, stats, values, duplicateInfo);
 
-    // Store signal count for persistence
     signalHistory.push(signals.length);
     if (signalHistory.length > CONFIG.persistenceWindow) signalHistory.shift();
 
-    // Determine final status using consensus + persistence
-    return determineStatusMultiSignal(latestValue, stats, signals);
+    // ========================================
+    // CALCULATE ENSEMBLE TRUST SCORE
+    // ========================================
+    return calculateEnsembleTrustScore(latestValue, stats, signals, duplicateInfo);
 }
 
 // ============================================================
-// SIGNAL DETECTORS
+// DUPLICATE ROW DETECTION (Row-Level Analysis)
 // ============================================================
-function runAllDetectors(latestValue, previousValue, stats, allValues) {
+function detectDuplicateRows(rows) {
+    if (!rows || rows.length < 2) return { hasDuplicates: false, duplicateCount: 0, duplicateRatio: 0 };
+
+    const rowHashes = new Set();
+    const duplicates = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        // Create hash from all cell values
+        const hash = rows[i].map(cell => cell?.value ?? cell?.formattedValue ?? '').join('|');
+        if (rowHashes.has(hash)) {
+            duplicates.push(i);
+        } else {
+            rowHashes.add(hash);
+        }
+    }
+
+    const duplicateRatio = duplicates.length / rows.length;
+
+    return {
+        hasDuplicates: duplicates.length > 0,
+        duplicateCount: duplicates.length,
+        duplicateRatio: duplicateRatio,
+        totalRows: rows.length,
+        uniqueRows: rowHashes.size
+    };
+}
+
+// ============================================================
+// SIGNAL DETECTORS (Ensemble Architecture)
+// ============================================================
+function runAllDetectors(latestValue, previousValue, stats, allValues, duplicateInfo) {
     const signals = [];
     const zScore = Math.abs(latestValue - stats.mean) / (stats.std || 1);
+    const multiplier = latestValue / stats.mean;
+    const threshold = getActiveThreshold();
+
+    // ========================================
+    // STATISTICAL DETECTORS (40% weight)
+    // ========================================
 
     // Signal 1: Z-Score Anomaly
-    if (zScore > getActiveThreshold()) {
+    if (zScore > threshold) {
         signals.push({
             type: 'Z_SCORE',
-            severity: zScore > getActiveThreshold() * 1.5 ? 'CRITICAL' : 'HIGH',
-            message: `Z-Score ${zScore.toFixed(1)} exceeds threshold ${getActiveThreshold()}`,
+            category: 'STATISTICAL',
+            severity: zScore > threshold * 1.5 ? 'CRITICAL' : 'HIGH',
+            value: zScore,
+            message: `Z-Score ${zScore.toFixed(1)} exceeds threshold ${threshold}`,
             icon: '📊'
         });
     }
 
-    // Signal 2: Business Rule Violation (Absolute Bounds)
+    // Signal 2: High Z-Score Warning
+    const warningZone = threshold * 0.7;
+    if (zScore > warningZone && zScore <= threshold) {
+        signals.push({
+            type: 'HIGH_ZSCORE',
+            category: 'STATISTICAL',
+            severity: 'LOW',
+            value: zScore,
+            message: `Z-Score ${zScore.toFixed(1)} approaching threshold`,
+            icon: '⚠️'
+        });
+    }
+
+    // ========================================
+    // BUSINESS DETECTORS (35% weight)
+    // ========================================
+
+    // Signal 3: Business Rule Violation
     if (latestValue < CONFIG.absoluteMin) {
         signals.push({
             type: 'BUSINESS_RULE',
+            category: 'BUSINESS',
             severity: 'CRITICAL',
+            value: latestValue,
             message: `Value ${latestValue.toFixed(1)}% below minimum ${CONFIG.absoluteMin}%`,
             icon: '📉'
         });
@@ -232,74 +316,90 @@ function runAllDetectors(latestValue, previousValue, stats, allValues) {
     if (latestValue > CONFIG.absoluteMax) {
         signals.push({
             type: 'BUSINESS_RULE',
+            category: 'BUSINESS',
             severity: 'CRITICAL',
-            message: `Value ${latestValue.toFixed(1)}% exceeds maximum ${CONFIG.absoluteMax}% (suspicious for margins)`,
+            value: latestValue,
+            message: `Value ${latestValue.toFixed(1)}% exceeds maximum ${CONFIG.absoluteMax}%`,
             icon: '🚨'
         });
     }
 
-    // Signal 3: Rate of Change (DoD)
-    if (previousValue !== 0) {
-        const roc = Math.abs((latestValue - previousValue) / previousValue);
-        if (roc > CONFIG.rocThreshold) {
-            signals.push({
-                type: 'RATE_OF_CHANGE',
-                severity: roc > 0.30 ? 'CRITICAL' : 'HIGH',
-                message: `${(roc * 100).toFixed(0)}% change from previous (threshold: ${CONFIG.rocThreshold * 100}%)`,
-                icon: '📈'
-            });
-        }
-    }
-
-    // Signal 4: Duplicate Inflation Detection (8-15% above expected)
-    const multiplier = latestValue / stats.mean;
-    if (multiplier >= CONFIG.inflationMin && multiplier <= CONFIG.inflationMax) {
-        signals.push({
-            type: 'DUPLICATE_INFLATION',
-            severity: 'MEDIUM',
-            message: `Value is ${((multiplier - 1) * 100).toFixed(0)}% above mean (possible row duplication)`,
-            icon: '📋'
-        });
-    }
-
-    // Signal 5: Currency Flip Detection (15-25% above, typical EUR/USD error)
-    if (multiplier > 1.15 && multiplier <= 1.25) {
-        signals.push({
-            type: 'CURRENCY_FLIP',
-            severity: 'MEDIUM',
-            message: `Value is ${((multiplier - 1) * 100).toFixed(0)}% above mean (possible currency conversion error)`,
-            icon: '💱'
-        });
-    }
-
-    // Signal 6: Decimal Shift (extreme multiplier)
+    // Signal 4: Decimal Shift
     if (multiplier > 50) {
         signals.push({
             type: 'DECIMAL_SHIFT',
+            category: 'BUSINESS',
             severity: 'CRITICAL',
-            message: `Value is ${multiplier.toFixed(0)}x baseline (likely decimal/unit error)`,
+            value: multiplier,
+            message: `Value is ${multiplier.toFixed(0)}x baseline (decimal/unit error)`,
             icon: '🔢'
         });
     }
 
-    // Signal 7: Negative Value (for metrics that shouldn't be negative)
+    // Signal 5: Negative Value
     if (latestValue < 0) {
         signals.push({
             type: 'NEGATIVE_VALUE',
+            category: 'BUSINESS',
             severity: 'CRITICAL',
+            value: latestValue,
             message: `Negative value detected: ${latestValue.toFixed(1)}%`,
             icon: '⛔'
         });
     }
 
-    // Signal 8: High Z-Score Warning (approaching threshold)
-    const warningZone = getActiveThreshold() * 0.7;
-    if (zScore > warningZone && zScore <= getActiveThreshold()) {
+    // ========================================
+    // TEMPORAL DETECTORS (25% weight)
+    // ========================================
+
+    // Signal 6: Rate of Change
+    if (previousValue !== 0) {
+        const roc = Math.abs((latestValue - previousValue) / previousValue);
+        if (roc > CONFIG.rocThreshold) {
+            signals.push({
+                type: 'RATE_OF_CHANGE',
+                category: 'TEMPORAL',
+                severity: roc > 0.30 ? 'CRITICAL' : 'HIGH',
+                value: roc,
+                message: `${(roc * 100).toFixed(0)}% change from previous`,
+                icon: '📈'
+            });
+        }
+    }
+
+    // Signal 7: Duplicate Inflation
+    if (multiplier >= CONFIG.inflationMin && multiplier <= CONFIG.inflationMax) {
         signals.push({
-            type: 'HIGH_ZSCORE',
-            severity: 'LOW',
-            message: `Z-Score ${zScore.toFixed(1)} approaching threshold (warning zone: >${warningZone.toFixed(1)})`,
-            icon: '⚠️'
+            type: 'DUPLICATE_INFLATION',
+            category: 'TEMPORAL',
+            severity: 'MEDIUM',
+            value: multiplier,
+            message: `Value ${((multiplier - 1) * 100).toFixed(0)}% above mean (possible duplication)`,
+            icon: '📋'
+        });
+    }
+
+    // Signal 8: Currency Flip
+    if (multiplier > 1.15 && multiplier <= 1.25) {
+        signals.push({
+            type: 'CURRENCY_FLIP',
+            category: 'TEMPORAL',
+            severity: 'MEDIUM',
+            value: multiplier,
+            message: `Value ${((multiplier - 1) * 100).toFixed(0)}% above mean (currency error?)`,
+            icon: '💱'
+        });
+    }
+
+    // Signal 9: Actual Duplicate Rows Detected (Row-Level)
+    if (duplicateInfo.hasDuplicates && duplicateInfo.duplicateRatio > 0.01) {
+        signals.push({
+            type: 'DUPLICATE_ROWS',
+            category: 'TEMPORAL',
+            severity: duplicateInfo.duplicateRatio > 0.05 ? 'CRITICAL' : 'MEDIUM',
+            value: duplicateInfo.duplicateRatio,
+            message: `${duplicateInfo.duplicateCount} duplicate rows (${(duplicateInfo.duplicateRatio * 100).toFixed(1)}%)`,
+            icon: '🔄'
         });
     }
 
@@ -307,44 +407,79 @@ function runAllDetectors(latestValue, previousValue, stats, allValues) {
 }
 
 // ============================================================
-// CONSENSUS-BASED DECISION WITH PERSISTENCE
+// ENSEMBLE TRUST SCORE CALCULATION
 // ============================================================
-function determineStatusMultiSignal(latestValue, stats, signals) {
+function calculateEnsembleTrustScore(latestValue, stats, signals, duplicateInfo) {
     const zScore = Math.abs(latestValue - stats.mean) / (stats.std || 1);
-    const signalCount = signals.length;
-    const criticalSignals = signals.filter(s => s.severity === 'CRITICAL').length;
 
-    // Check persistence: Did anomaly persist across evaluations?
-    const persistentAnomaly = checkPersistence();
+    // Start with 100 (perfect trust)
+    let trustScore = 100;
 
-    let status = 'SAFE';
-    let isSafe = true;
-    let message = `Verified (${latestValue.toFixed(1)}%)`;
+    // Calculate penalties by category
+    const categoryPenalties = {
+        STATISTICAL: 0,
+        BUSINESS: 0,
+        TEMPORAL: 0
+    };
 
-    // LOCK CONDITIONS (any of these):
-    // 1. Any CRITICAL signal (immediate lock)
-    // 2. 2+ non-critical signals (consensus)
-    // 3. Persistent anomaly (2/3 evaluations had signals)
+    for (const signal of signals) {
+        const detector = DETECTOR_REGISTRY[signal.type];
+        if (!detector) continue;
 
-    if (criticalSignals > 0) {
-        status = 'LOCKED';
-        isSafe = false;
-        message = `CRITICAL: ${signals.find(s => s.severity === 'CRITICAL').message}`;
-    } else if (signalCount >= CONFIG.signalsForLock) {
-        status = 'LOCKED';
-        isSafe = false;
-        message = `CONSENSUS LOCK: ${signalCount} signals detected`;
-    } else if (persistentAnomaly && signalCount > 0) {
-        status = 'LOCKED';
-        isSafe = false;
-        message = `PERSISTENT ANOMALY: Issue detected in ${CONFIG.persistenceRequired}/${CONFIG.persistenceWindow} evaluations`;
-    } else if (signalCount >= CONFIG.signalsForWarning) {
-        status = 'WARNING';
-        isSafe = true;
-        message = `WARNING: ${signals[0].message}`;
+        const penalty = signal.severity === 'CRITICAL'
+            ? detector.criticalPenalty
+            : signal.severity === 'HIGH'
+                ? detector.basePenalty
+                : detector.basePenalty * 0.5;  // LOW severity = half penalty
+
+        categoryPenalties[detector.category] += penalty;
     }
 
-    const confidence = Math.max(0, Math.min(100, 100 * (1 - (signalCount / 5))));
+    // Apply weighted penalties
+    const weights = CONFIG.ensembleWeights;
+    const weightedPenalty =
+        (Math.min(categoryPenalties.STATISTICAL, 100) * weights.STATISTICAL) +
+        (Math.min(categoryPenalties.BUSINESS, 100) * weights.BUSINESS) +
+        (Math.min(categoryPenalties.TEMPORAL, 100) * weights.TEMPORAL);
+
+    trustScore = Math.max(0, Math.min(100, 100 - weightedPenalty));
+
+    // Check persistence
+    const persistentAnomaly = checkPersistence();
+    if (persistentAnomaly && signals.length > 0) {
+        trustScore = Math.max(0, trustScore - 15);  // Additional penalty for persistence
+    }
+
+    // Determine status from trust score
+    let status = 'SAFE';
+    let isSafe = true;
+    let message = `Trust Score: ${trustScore.toFixed(0)}/100`;
+
+    if (trustScore < CONFIG.trustScoreLock) {
+        status = 'LOCKED';
+        isSafe = false;
+        message = `LOW TRUST: ${trustScore.toFixed(0)}/100 - ${signals[0]?.message || 'Multiple issues detected'}`;
+    } else if (trustScore < CONFIG.trustScoreWarning) {
+        status = 'WARNING';
+        isSafe = true;
+        message = `CAUTION: Trust Score ${trustScore.toFixed(0)}/100`;
+    }
+
+    // Category breakdown for UI
+    const categoryBreakdown = {
+        statistical: {
+            score: Math.max(0, 100 - categoryPenalties.STATISTICAL),
+            weight: weights.STATISTICAL
+        },
+        business: {
+            score: Math.max(0, 100 - categoryPenalties.BUSINESS),
+            weight: weights.BUSINESS
+        },
+        temporal: {
+            score: Math.max(0, 100 - categoryPenalties.TEMPORAL),
+            weight: weights.TEMPORAL
+        }
+    };
 
     return {
         status,
@@ -352,11 +487,14 @@ function determineStatusMultiSignal(latestValue, stats, signals) {
         message,
         latestValue,
         zScore,
-        confidence,
+        trustScore,
+        confidence: trustScore,  // For backward compatibility
         mean: stats.mean,
         signals: signals.map(s => s.type),
-        signalsFired: signalCount,
+        signalsFired: signals.length,
         signalDetails: signals,
+        categoryBreakdown,
+        duplicateInfo,
         fingerprint: signals.length > 0 ? generateFingerprint(signals) : null,
         propagation: propagateTrust(CONFIG.heroMetricField, isSafe),
         persistentAnomaly
@@ -365,15 +503,12 @@ function determineStatusMultiSignal(latestValue, stats, signals) {
 
 function checkPersistence() {
     if (signalHistory.length < CONFIG.persistenceWindow) return false;
-
     const recentSignals = signalHistory.slice(-CONFIG.persistenceWindow);
     const anomalyCount = recentSignals.filter(count => count > 0).length;
-
     return anomalyCount >= CONFIG.persistenceRequired;
 }
 
 function generateFingerprint(signals) {
-    // Pick the most severe signal as the fingerprint
     const critical = signals.find(s => s.severity === 'CRITICAL');
     const high = signals.find(s => s.severity === 'HIGH');
     const primary = critical || high || signals[0];
@@ -382,19 +517,23 @@ function generateFingerprint(signals) {
         pattern: primary.type,
         description: primary.message,
         icon: primary.icon,
+        category: primary.category,
         rootCause: getRootCause(primary.type),
-        allSignals: signals.map(s => s.type)
+        allSignals: signals.map(s => ({ type: s.type, category: s.category }))
     };
 }
 
 function getRootCause(signalType) {
     const causes = {
         'Z_SCORE': 'Statistical outlier - investigate data source',
+        'HIGH_ZSCORE': 'Value approaching anomaly threshold',
         'BUSINESS_RULE': 'Value outside business-valid range',
         'RATE_OF_CHANGE': 'Sudden change - check recent data loads',
         'DUPLICATE_INFLATION': 'Possible duplicate rows from JOIN issues',
+        'CURRENCY_FLIP': 'Possible currency conversion error',
         'DECIMAL_SHIFT': 'Check ETL unit/decimal conversions',
-        'NEGATIVE_VALUE': 'Unexpected negative - check calculation logic'
+        'NEGATIVE_VALUE': 'Unexpected negative - check calculation logic',
+        'DUPLICATE_ROWS': 'Actual duplicate rows detected in data'
     };
     return causes[signalType] || 'Manual investigation required';
 }
@@ -440,7 +579,7 @@ function updateUIState(state, data = {}) {
     switch (state) {
         case 'loading':
             setHeroState('loading', '⏳', 'Analyzing...');
-            alertMessage.textContent = 'Running multi-signal detection...';
+            alertMessage.textContent = 'Running ensemble detection...';
             break;
         case 'safe':
             setHeroState('safe', '✓', 'System Trusted');
@@ -473,7 +612,7 @@ function updateUIState(state, data = {}) {
             break;
     }
 
-    if (data.zScore !== undefined) updateStats(data);
+    if (data.trustScore !== undefined) updateStats(data);
     if (data.fingerprint || data.signalDetails) updateNovelInsightsUI(data);
 }
 
@@ -499,12 +638,12 @@ function setHeroState(state, icon, text) {
 function updateStats(data) {
     setText('stat-zscore', data.zScore.toFixed(1));
     setText('stat-baseline', `${data.mean.toFixed(0)}%`);
-    setText('confidence-value', `${data.confidence.toFixed(0)}%`);
+    setText('confidence-value', `${data.trustScore.toFixed(0)}/100`);
 
     const meter = document.getElementById('meter-fill');
     if (meter) {
-        meter.style.width = `${data.confidence}%`;
-        meter.style.background = data.confidence >= 80 ? 'var(--c-safe)' : data.confidence >= 50 ? 'var(--c-warn)' : 'var(--c-danger)';
+        meter.style.width = `${data.trustScore}%`;
+        meter.style.background = data.trustScore >= 80 ? 'var(--c-safe)' : data.trustScore >= 50 ? 'var(--c-warn)' : 'var(--c-danger)';
     }
 }
 
@@ -516,7 +655,7 @@ function updateTimelineUI() {
         <div class="timeline-entry">
             <span class="t-time">${e.timestamp}</span>
             <span class="t-status" style="color:${e.status === 'SAFE' ? 'var(--c-safe)' : e.status === 'LOCKED' ? 'var(--c-danger)' : 'var(--c-warn)'}">
-                ${e.status} (${e.signals || 0} signals)
+                Score: ${e.trustScore?.toFixed(0) || '?'}/100 (${e.signals || 0} signals)
             </span>
         </div>
     `).join('');
@@ -527,20 +666,26 @@ function updateNovelInsightsUI(data) {
     if (fpPanel) {
         if (data.fingerprint) {
             fpPanel.classList.remove('hidden');
-            setText('fingerprint-pattern', data.fingerprint.pattern);
+            setText('fingerprint-pattern', `${data.fingerprint.pattern} [${data.fingerprint.category}]`);
             setText('fingerprint-desc', data.fingerprint.description);
         } else {
             fpPanel.classList.add('hidden');
         }
     }
 
-    // Show all fired signals
-    if (data.signalDetails && data.signalDetails.length > 0) {
+    // Show category breakdown
+    if (data.categoryBreakdown) {
+        const cb = data.categoryBreakdown;
+        setText('prediction-status', `Ensemble Score`);
+        setText('prediction-message',
+            `STAT: ${cb.statistical.score.toFixed(0)} | BIZ: ${cb.business.score.toFixed(0)} | TEMP: ${cb.temporal.score.toFixed(0)}`
+        );
+    } else if (data.signalDetails && data.signalDetails.length > 0) {
         setText('prediction-status', `${data.signalDetails.length} Signals`);
         setText('prediction-message', data.signalDetails.map(s => s.type).join(', '));
     } else {
-        setText('prediction-status', 'No Signals');
-        setText('prediction-message', 'All checks passed');
+        setText('prediction-status', 'All Clear');
+        setText('prediction-message', 'No anomalies detected');
     }
 
     const propPanel = document.getElementById('propagation-panel');
@@ -588,14 +733,13 @@ window.injectSubtle = function () {
     runAudit();
 };
 window.injectDuplicate = function () {
-    // Inject a value that's 10% above mean to trigger duplicate inflation
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 25.9;  // ~10% above typical 23.5 mean
+    CONFIG.demoAnomalyValue = 25.9;
     runAudit();
 };
 window.resetNormal = function () {
     CONFIG.demoAnomalyActive = false;
-    signalHistory = [];  // Reset persistence
+    signalHistory = [];
     runAudit();
 };
 window.updateThreshold = function (val) {
