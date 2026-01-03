@@ -600,49 +600,40 @@ function updateUIState(state, data = {}) {
             break;
 
         case 'safe':
-            body.classList.add('state-safe');
-            badge.classList.add('safe');
-            badge.innerHTML = '<span class="status-icon">✓</span><span>Verified</span>';
-            alertMessage.textContent = data.message || 'All metrics within normal range.';
+            setHeroState('safe', '✓', 'System Trusted');
+            alertMessage.textContent = data.message || 'All metrics within safe operating bounds.';
             updateStats(data);
             break;
 
         case 'warning':
-            body.classList.add('state-warning');
-            badge.classList.add('warning');
-            badge.innerHTML = '<span class="status-icon">⚠</span><span>Warning</span>';
+            setHeroState('warning', '!', 'Warning Detected');
             alertMessage.textContent = data.message || 'Unusual pattern detected.';
             updateStats(data);
             break;
 
         case 'locked':
-            body.classList.add('state-locked');
-            badge.classList.add('locked');
-            badge.innerHTML = '<span class="status-icon">⛔</span><span>Locked</span>';
-            alertMessage.textContent = data.message || 'Anomaly detected.';
+            setHeroState('locked', '⛔', 'System Lockdown');
+            alertMessage.textContent = data.message || 'Anomaly detected. Access restricted.';
 
-            if (data.latestValue !== undefined) {
-                document.getElementById('metric-value').textContent = `${data.latestValue}% `;
-                document.getElementById('metric-baseline').textContent =
-                    `Data range: ${(data.mean - 2 * data.std).toFixed(0)}% - ${(data.mean + 2 * data.std).toFixed(0)}% (n = ${data.dataPoints})`;
-                metricDisplay.classList.add('visible');
-            }
-
+            // Populate overlay
             safetyOverlay.classList.add('active');
             document.getElementById('safety-message').textContent = data.message;
+            if (data.fingerprint && data.fingerprint.desc) {
+                document.getElementById('safety-fingerprint-desc').textContent = data.fingerprint.desc;
+            }
+            if (data.propagation && data.propagation.message) {
+                document.getElementById('safety-propagation-msg').textContent = data.propagation.message;
+            }
             updateStats(data);
             break;
 
         case 'standalone':
-            body.classList.add('state-loading');
-            badge.classList.add('loading');
-            badge.innerHTML = '<span class="status-icon">🖥️</span><span>Standalone</span>';
-            alertMessage.textContent = 'Running outside Tableau. Use demo buttons to test UI.';
+            setHeroState('loading', '🖥️', 'Standalone Mode');
+            alertMessage.textContent = 'Running outside Tableau. Use demo buttons.';
             break;
 
         case 'error':
-            body.classList.add('state-loading');
-            badge.innerHTML = '<span class="status-icon">⚠</span><span>Error</span>';
+            setHeroState('loading', '⚠', 'System Error');
             alertMessage.textContent = data.message || 'Analysis failed.';
             break;
     }
@@ -651,8 +642,32 @@ function updateUIState(state, data = {}) {
     if (data.fingerprint || data.prediction || data.propagation) {
         updateNovelInsightsUI(data);
     }
+}
 
-    document.getElementById('last-checked').textContent = new Date().toLocaleTimeString();
+/**
+ * Helper to update Hero Status
+ */
+function setHeroState(state, icon, text) {
+    const hero = document.querySelector('.status-hero');
+    const heroIcon = document.querySelector('.hero-icon');
+    const heroText = document.getElementById('status-text');
+    const badgeStatus = document.querySelector('.brand-status');
+
+    // Reset classes
+    document.body.className = '';
+    hero.className = 'status-hero';
+
+    // Add new state
+    document.body.classList.add(`state-${state}`);
+    hero.classList.add(state);
+
+    heroIcon.textContent = icon;
+    heroText.textContent = text;
+
+    if (badgeStatus) {
+        badgeStatus.textContent = state === 'safe' ? 'System Active' : state === 'locked' ? 'Security Lock' : 'Warning';
+        badgeStatus.style.color = state === 'safe' ? 'var(--c-safe)' : state === 'locked' ? 'var(--c-danger)' : 'var(--c-warn)';
+    }
 }
 
 /**
@@ -661,19 +676,24 @@ function updateUIState(state, data = {}) {
 function updateStats(data) {
     if (data.zScore !== undefined) {
         document.getElementById('stat-zscore').textContent = data.zScore.toFixed(1);
+        const lastChecked = document.getElementById('last-checked');
+        if (lastChecked) {
+            lastChecked.textContent = new Date().toLocaleTimeString();
+        }
     }
     if (data.mean !== undefined) {
         document.getElementById('stat-baseline').textContent = `${data.mean.toFixed(0)}% `;
     }
-    document.getElementById('stat-checks').textContent = checkCount;
 
     const confidence = data.confidence || 0;
-    document.getElementById('confidence-value').textContent = `${confidence.toFixed(0)}% `;
+    const confEl = document.getElementById('confidence-value');
+    if (confEl) confEl.textContent = `${confidence.toFixed(0)}% `;
 
     const meterFill = document.getElementById('meter-fill');
-    meterFill.style.width = `${confidence}% `;
-    meterFill.classList.remove('high', 'medium', 'low');
-    meterFill.classList.add(confidence >= 70 ? 'high' : confidence >= 40 ? 'medium' : 'low');
+    if (meterFill) {
+        meterFill.style.width = `${confidence}% `;
+        meterFill.style.background = confidence >= 80 ? 'var(--c-safe)' : confidence >= 50 ? 'var(--c-warn)' : 'var(--c-danger)';
+    }
 }
 
 /**

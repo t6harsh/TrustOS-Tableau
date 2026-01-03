@@ -9,203 +9,157 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Tableau Extensions API (Local file to likely bypass CSP issues) -->
+    <!-- Tableau Extensions API -->
     <script src="tableau.extensions.1.latest.min.js"></script>
 
-    <!-- TrustOS Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body class="state-loading">
-    <!-- Main Grid Layout for Green State -->
-    <div class="trustos-grid">
-        <!-- TOP ROW: Main Card + Controls -->
-        <div class="top-row">
-            <!-- Main Card (65%) -->
-            <div class="main-card glass-card">
-                <!-- Logo -->
-                <div class="trustos-logo">
-                    <div class="logo-icon">🛡️</div>
-                    <span class="logo-text">TrustOS</span>
-                </div>
-                <p class="tagline">Dashboard Safety Layer</p>
 
-                <!-- Status Badge -->
-                <div id="status-badge" class="status-badge loading">
-                    <span class="status-icon"><span class="loading-spinner"></span></span>
-                    <span id="status-text">Initializing</span>
-                </div>
+    <!-- App Container (Single Column, Scrollable) -->
+    <div class="app-container">
 
-                <!-- Alert Message -->
-                <p id="alert-message" class="alert-message">
-                    Connecting to TrustOS backend...
-                </p>
-
-                <!-- Metric Display (shown on anomaly) -->
-                <div id="metric-display" class="metric-display">
-                    <div class="metric-label">Detected Value</div>
-                    <div id="metric-value" class="metric-value anomaly">--</div>
-                    <div id="metric-baseline" class="metric-baseline">Historical range: 20% - 28%</div>
-                </div>
-
-                <!-- Stats Row -->
-                <div class="stats-row">
-                    <div class="stat-item">
-                        <div id="stat-zscore" class="stat-value">--</div>
-                        <div class="stat-label">Z-Score</div>
-                    </div>
-                    <div class="stat-item">
-                        <div id="stat-baseline" class="stat-value">--</div>
-                        <div class="stat-label">Baseline</div>
-                    </div>
-                    <div class="stat-item">
-                        <div id="stat-checks" class="stat-value">--</div>
-                        <div class="stat-label">Checks</div>
-                    </div>
-                </div>
-
-                <!-- Confidence Meter -->
-                <div class="confidence-meter">
-                    <div class="meter-label">
-                        <span>Confidence Score</span>
-                        <span id="confidence-value">--%</span>
-                    </div>
-                    <div class="meter-bar">
-                        <div id="meter-fill" class="meter-fill high" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="runAudit()">🔄 Re-Audit</button>
-                </div>
-
-                <!-- Footer -->
-                <div class="footer">
-                    Last checked: <span id="last-checked">Never</span>
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">🛡️</div>
+                <div class="brand-info">
+                    <h1 class="brand-name">TrustOS</h1>
+                    <span class="brand-status">System Active</span>
                 </div>
             </div>
-
-            <!-- Controls Card (35%) -->
-            <div class="controls-card glass-card">
-                <div class="controls-header">🎛️ Demo Controls</div>
-
-                <!-- Threshold Slider -->
-                <div class="threshold-control">
-                    <label>Threshold: <span id="thresholdValue">2.5</span></label>
-                    <input type="range" id="thresholdSlider" min="1.5" max="5.0" step="0.1" value="2.5"
-                        oninput="updateThreshold(this.value)">
-                    <div class="threshold-labels">
-                        <span>Strict</span>
-                        <span>Relaxed</span>
-                    </div>
-                </div>
-
-                <!-- Injection Buttons -->
-                <div class="injection-buttons-vertical">
-                    <button class="demo-btn subtle" onclick="injectSubtle()">🔍 Subtle (28%)</button>
-                    <button class="demo-btn moderate" onclick="injectModerate()">📊 Moderate (29.5%)</button>
-                    <button class="demo-btn extreme" onclick="injectExtreme()">💥 Extreme (2400%)</button>
-                    <button class="demo-btn reset" onclick="resetNormal()">✅ Reset</button>
-                </div>
+            <div class="header-actions">
+                <button class="btn-icon" onclick="runAudit()" title="Run Audit">🔄</button>
             </div>
-        </div>
+        </header>
 
-        <!-- BOTTOM ROW: Timeline + AI Insights -->
-        <div class="bottom-row">
-            <!-- Timeline Panel (50%) -->
-            <div class="bottom-panel glass-card">
-                <div class="panel-header">📜 Trust Timeline</div>
-                <div id="trust-timeline" class="trust-timeline">
-                    <div class="timeline-empty">No evaluations yet</div>
+        <!-- Scrollable Content -->
+        <main class="app-content">
+
+            <!-- Hero Section: System Status -->
+            <section class="status-hero safe"> <!-- Toggle class: safe/warning/locked -->
+                <div class="hero-ring">
+                    <div class="hero-icon">✓</div>
                 </div>
-            </div>
+                <h2 id="status-text">System Trusted</h2>
+                <p id="alert-message">All metrics within safe operating bounds.</p>
+            </section>
 
-            <!-- AI Insights Panel (50%) -->
-            <div class="bottom-panel glass-card">
-                <div class="panel-header">🧠 AI Insights</div>
+            <!-- Key Metrics Grid -->
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <span class="label">Confidence</span>
+                    <span class="value" id="confidence-value">--%</span>
+                    <div class="mini-bar">
+                        <div class="fill" style="width: 0%" id="meter-fill"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Z-Score</span>
+                    <span class="value" id="stat-zscore">--</span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Baseline</span>
+                    <span class="value" id="stat-baseline">--%</span>
+                </div>
+            </section>
 
-                <!-- Fingerprint -->
-                <div id="fingerprint-panel" class="insight-item hidden">
-                    <span id="fingerprint-icon" class="insight-icon">🔍</span>
-                    <div class="insight-content">
-                        <div id="fingerprint-pattern" class="insight-title">--</div>
-                        <div id="fingerprint-desc" class="insight-desc">--</div>
+            <!-- Dev/Demo Tools (Collapsible) -->
+            <section class="dev-tools-card">
+                <div class="card-header">
+                    <span>🎛️ Demo Controls</span>
+                </div>
+                <div class="controls-body">
+                    <div class="control-row">
+                        <label>Threshold Mode</label>
+                        <div class="toggle-group">
+                            <span class="mode-label">Strict</span>
+                            <input type="range" id="thresholdSlider" min="1.5" max="5.0" step="0.1" value="2.5"
+                                oninput="updateThreshold(this.value)">
+                            <span class="mode-label">Relaxed</span>
+                        </div>
+                        <div class="current-threshold">Current: <span id="thresholdValue">2.5</span></div>
+                    </div>
+                    <div class="control-row buttons-row">
+                        <button class="btn-tool subtle" onclick="injectSubtle()">Subtle</button>
+                        <button class="btn-tool moderate" onclick="injectModerate()">Moderate</button>
+                        <button class="btn-tool extreme" onclick="injectExtreme()">Extreme</button>
+                        <button class="btn-tool reset" onclick="resetNormal()">Reset</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Activity Timeline -->
+            <section class="info-card">
+                <div class="card-title">Activity Log</div>
+                <div id="trust-timeline" class="activity-list">
+                    <div class="empty-state">No activity recorded</div>
+                </div>
+            </section>
+
+            <!-- AI Insights (Hidden by default, shown on data) -->
+            <section class="info-card insights-card">
+                <div class="card-title">🧠 AI Analysis</div>
+
+                <div id="fingerprint-panel" class="insight-row hidden">
+                    <div class="i-icon">🔍</div>
+                    <div class="i-content">
+                        <div class="i-title" id="fingerprint-pattern">--</div>
+                        <div class="i-desc" id="fingerprint-desc">--</div>
                     </div>
                 </div>
 
-                <!-- Prediction -->
-                <div id="prediction-panel" class="insight-item">
-                    <span id="prediction-icon" class="insight-icon">🔮</span>
-                    <div class="insight-content">
-                        <div id="prediction-status" class="insight-title">Trend Analysis</div>
-                        <div id="prediction-message" class="insight-desc">Gathering data...</div>
+                <div id="prediction-panel" class="insight-row">
+                    <div class="i-icon">🔮</div>
+                    <div class="i-content">
+                        <div class="i-title" id="prediction-status">Trend Analysis</div>
+                        <div class="i-desc" id="prediction-message">Monitoring trajectory...</div>
                     </div>
                 </div>
 
-                <!-- Propagation -->
-                <div id="propagation-panel" class="insight-item hidden">
-                    <span class="insight-icon">🌐</span>
-                    <div class="insight-content">
-                        <div id="propagation-status" class="insight-title">Trust Cascade</div>
-                        <div id="propagation-message" class="insight-desc">--</div>
+                <div id="propagation-panel" class="insight-row hidden">
+                    <div class="i-icon">🌐</div>
+                    <div class="i-content">
+                        <div class="i-title">Impact Radius</div>
+                        <div class="i-desc" id="propagation-message">--</div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
+
+            <div class="spacer" style="height: 40px;"></div>
+        </main>
     </div>
 
-    <!-- Safety Mode Full-Screen Overlay (for RED state) -->
+    <!-- Safety Overlay (Red Screen) -->
     <div id="safety-overlay" class="safety-overlay">
-        <div class="safety-content">
-            <div class="safety-header">
-                <div class="safety-icon">⛔</div>
-                <h1 class="safety-title">Safety Mode Active</h1>
-            </div>
-            <p id="safety-message" class="safety-message">
-                Critical anomaly detected. Dashboard visibility restricted.
-            </p>
+        <div class="overlay-container">
+            <div class="lock-icon">⛔</div>
+            <h1 class="lock-title">Safety Lockdown</h1>
+            <p class="lock-msg" id="safety-message">Anomaly detected. Dashboard access restricted.</p>
 
-            <!-- AI Insights on Lock Screen -->
-            <div class="safety-insights">
-                <div class="safety-insight-header">🧠 AI Analysis</div>
-
-                <div id="safety-fingerprint" class="safety-insight-item">
-                    <span id="safety-fingerprint-icon" class="safety-insight-icon">🔍</span>
-                    <div class="safety-insight-content">
-                        <div id="safety-fingerprint-pattern" class="safety-insight-title">Analyzing...</div>
-                        <div id="safety-fingerprint-cause" class="safety-insight-desc">--</div>
-                    </div>
+            <div class="lock-insights">
+                <div class="lock-insight-row">
+                    <span class="li-icon">🔍</span>
+                    <span class="li-text" id="safety-fingerprint-desc">Analyzing root cause...</span>
                 </div>
-
-                <div id="safety-prediction" class="safety-insight-item">
-                    <span class="safety-insight-icon">🔮</span>
-                    <div class="safety-insight-content">
-                        <div id="safety-prediction-title" class="safety-insight-title">Trend</div>
-                        <div id="safety-prediction-msg" class="safety-insight-desc">--</div>
-                    </div>
-                </div>
-
-                <div id="safety-propagation" class="safety-insight-item">
-                    <span class="safety-insight-icon">🌐</span>
-                    <div class="safety-insight-content">
-                        <div class="safety-insight-title">Trust Cascade</div>
-                        <div id="safety-propagation-msg" class="safety-insight-desc">--</div>
-                    </div>
+                <div class="lock-insight-row">
+                    <span class="li-icon">🌐</span>
+                    <span class="li-text" id="safety-propagation-msg">Assessing impact...</span>
                 </div>
             </div>
 
-            <div class="action-buttons">
-                <button class="btn btn-primary" onclick="runAudit()">🔄 Re-Check Now</button>
-                <button class="btn btn-success" onclick="resetNormal()">✅ Reset to Normal</button>
+            <div class="lock-actions">
+                <button class="btn-lock primary" onclick="runAudit()">Re-Scan Data</button>
+                <button class="btn-lock secondary" onclick="resetNormal()">Force Unlock</button>
             </div>
         </div>
     </div>
 
-    <!-- TrustOS Script (v17 for cache bust) -->
-    <script src="script.js?v=17"></script>
+    <!-- Script v18 -->
+    <script src="script.js?v=18"></script>
 </body>
 
 </html>
