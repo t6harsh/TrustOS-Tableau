@@ -290,24 +290,25 @@ The extension includes a **live demo panel** (bottom-right) for presentations:
 | Gross Margin std dev | ~2.1% |
 | Natural variance range | 18.8% – 29.2% |
 
-### Detection Scenarios Tested
+### Configurable Detection Sensitivity
 
-| Scenario | Corruption Type | Value | Z-Score | Strict Mode | Relaxed Mode |
-|----------|-----------------|-------|---------|-------------|--------------|
-| **Obvious spike** | Decimal shift error | 2400% | 847 | ⛔ LOCKED | ⛔ LOCKED |
-| **Currency flip** | 1.2x conversion error | 28.2% | 2.2 | ✅ TRUSTED | ✅ TRUSTED |
-| **Duplicate rows** | 8% inflation | 25.4% | 0.9 | ✅ TRUSTED | ✅ TRUSTED |
-| **Subtle drift** | Gradual 15% increase | 27.0% | 1.7 | ⚠️ WARNING | ✅ TRUSTED |
-| **Seasonal spike** | Black Friday-like | 29.5% | 2.9 | ⛔ LOCKED | ✅ TRUSTED |
-| **Normal data** | No corruption | 23.5% | 0.0 | ✅ TRUSTED | ✅ TRUSTED |
+**Key insight:** TrustOS catches subtle corruption when configured for your risk tolerance.
 
-### Threshold Sensitivity Analysis
+| Corruption Type | Value | Z-Score | Threshold 2.0 | Threshold 2.5 | Threshold 4.0 |
+|-----------------|-------|---------|---------------|---------------|---------------|
+| **Decimal shift** | 2400% | 847 | ⛔ LOCKED | ⛔ LOCKED | ⛔ LOCKED |
+| **Seasonal spike** | 29.5% | 2.9 | ⛔ LOCKED | ⛔ LOCKED | ✅ TRUSTED |
+| **Currency error** | 28.2% | 2.2 | ⛔ LOCKED | ⚠️ WARNING | ✅ TRUSTED |
+| **Subtle drift** | 27.0% | 1.7 | ⚠️ WARNING | ✅ TRUSTED | ✅ TRUSTED |
+| **Normal data** | 23.5% | 0.0 | ✅ TRUSTED | ✅ TRUSTED | ✅ TRUSTED |
 
-| Threshold | False Positives (Clean Data) | True Positives (Corruption) | Use Case |
-|-----------|------------------------------|-----------------------------|--------------------|
-| Z > 2.0 | Higher | Maximum sensitivity | High-stakes metrics |
-| Z > 2.5 (Strict) | Low | High | Default/recommended |
-| Z > 4.0 (Relaxed) | Very low | Moderate | Seasonal businesses |
+### Recommended Threshold by Use Case
+
+| Business Context | Recommended Threshold | Why |
+|------------------|----------------------|-----|
+| **Financial reporting** | 2.0 (Strict) | Catch all deviations, accept more alerts |
+| **Daily operations** | 2.5 (Balanced) | Catch significant issues, minimize noise |
+| **Seasonal business** | 3.5+ (Relaxed) | Allow expected variance, catch extremes |
 
 ### Performance Metrics
 
@@ -318,7 +319,7 @@ The extension includes a **live demo panel** (bottom-right) for presentations:
 | Memory footprint | < 5MB |
 | Data points processed | 180+ per evaluation |
 
-> **Key Insight:** Subtle corruptions (8% inflation, 1.2x currency) fall below default thresholds. Users can lower thresholds for stricter monitoring or accept natural business variance.
+> **The Point:** TrustOS doesn't have one "right" sensitivity. The slider lets users configure thresholds based on their tolerance for false positives vs. missed detections.
 
 ---
 
