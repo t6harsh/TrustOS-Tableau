@@ -164,10 +164,10 @@ async function runAudit() {
         updateTimelineUI();
 
         // Update new transparency UI elements
-        updateContributionBars(analysisResult.signals, analysisResult.categoryBreakdown);
+        updateContributionBars(analysisResult.signalDetails, analysisResult.categoryBreakdown);
         updateSparkline(analysisResult.trustScore);
 
-        updateUIState(analysisResult.status.toLowerCase(), analysisResult);
+        updateUIState((analysisResult.status || 'safe').toLowerCase(), analysisResult);
         await setTableauParameter(analysisResult.isSafe);
 
     } catch (error) {
@@ -738,13 +738,16 @@ function updateContributionBars(signals, categoryBreakdown) {
     // Build contribution rows
     let html = '';
     for (const signal of signals.slice(0, 5)) {  // Max 5 bars
-        const severityClass = signal.severity.toLowerCase();
-        const penalty = signal.severity === 'CRITICAL' ? 25 : signal.severity === 'HIGH' ? 15 : signal.severity === 'MEDIUM' ? 10 : 5;
+        if (!signal) continue;
+        const severity = signal.severity || 'MEDIUM';
+        const signalType = signal.type || 'UNKNOWN';
+        const severityClass = severity.toLowerCase();
+        const penalty = severity === 'CRITICAL' ? 25 : severity === 'HIGH' ? 15 : severity === 'MEDIUM' ? 10 : 5;
         const widthPct = Math.min(penalty * 4, 100);  // Scale for visibility
 
         html += `
             <div class="contrib-row">
-                <span class="contrib-label">${signal.type}</span>
+                <span class="contrib-label">${signalType}</span>
                 <div class="contrib-bar">
                     <div class="contrib-fill ${severityClass}" style="width: ${widthPct}%"></div>
                 </div>
