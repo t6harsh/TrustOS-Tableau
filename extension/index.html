@@ -83,9 +83,11 @@
                         </div>
                         <div class="current-threshold">Current: <span id="thresholdValue">2.5</span></div>
                     </div>
-                    <div class="control-row buttons-row">
+                    <div class="control-row buttons-row" style="grid-template-columns: repeat(5, 1fr);">
                         <button class="btn-tool subtle" onclick="injectSubtle()">Subtle</button>
-                        <button class="btn-tool moderate" onclick="injectModerate()">Moderate</button>
+                        <button class="btn-tool moderate" onclick="injectModerate()">Seasonal</button>
+                        <button class="btn-tool" style="border-bottom: 2px solid #8b5cf6;"
+                            onclick="injectDuplicate()">Dupe</button>
                         <button class="btn-tool extreme" onclick="injectExtreme()">Extreme</button>
                         <button class="btn-tool reset" onclick="resetNormal()">Reset</button>
                     </div>
@@ -102,7 +104,7 @@
 
             <!-- AI Insights (Hidden by default, shown on data) -->
             <section class="info-card insights-card">
-                <div class="card-title">🧠 AI Analysis</div>
+                <div class="card-title">📊 Signal Analysis</div>
 
                 <div id="fingerprint-panel" class="insight-row hidden">
                     <div class="i-icon">🔍</div>
@@ -158,8 +160,8 @@
         </div>
     </div>
 
-    <!-- Script v20 (Emerald Theme) -->
-    <script src="script.js?v=20"></script>
+    <!-- Script v21 (Multi-Signal Detection) -->
+    <script src="script.js?v=21"></script>
 </body>
 
 </html>
