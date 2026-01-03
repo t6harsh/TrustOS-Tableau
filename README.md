@@ -129,6 +129,52 @@ if (worstMetric.zScore > threshold) {
 
 ---
 
+## 🧠 Novel AI Features
+
+What sets TrustOS apart from basic anomaly detection:
+
+### 1. Anomaly Fingerprinting 🔍
+
+**Classifies the root cause of anomalies, not just detection:**
+
+| Pattern | Signature | Root Cause Suggestion |
+|---------|-----------|----------------------|
+| `DECIMAL_SHIFT` | 100x baseline | Check ETL decimal handling or unit conversions |
+| `CURRENCY_FLIP` | ~1.2x baseline | Check currency conversion logic (EUR/USD?) |
+| `DUPLICATE_INFLATION` | ~8% inflation | Check join logic for duplicate aggregation |
+| `SEASONAL_SPIKE` | Z: 2-4, positive | Black Friday or duplicate rows? |
+| `DATA_DROP` | Z: 2-4, negative | Missing data or filter errors |
+
+### 2. Predictive Trust 🔮
+
+**Warns BEFORE trust fails using trend analysis:**
+
+```javascript
+// Linear regression on recent Z-scores
+const slope = calculateTrend(recentZScores);
+const stepsToThreshold = (threshold - currentZ) / slope;
+
+if (stepsToThreshold <= 5) {
+    warn("Trust may fail in " + stepsToThreshold + " evaluations");
+}
+```
+
+Output: *"⚠️ PREDICTIVE WARNING: Trust may fail in 3 evaluations"*
+
+### 3. Trust Propagation 🌐
+
+**Cascades trust failures to related metrics:**
+
+| If This Fails | These Become SUSPECT |
+|---------------|---------------------|
+| Gross Margin | Revenue, COGS, Profit, Profit Margin |
+| Revenue | Gross Margin, Units Sold, ASP, Total Sales |
+| Profit | Revenue, COGS, Gross Margin, Expenses |
+
+> **Why this matters:** A currency error in Revenue doesn't just affect Revenue—it corrupts every downstream calculation.
+
+---
+
 ## 🔮 Future State: AI Agent Integration
 
 > **Note:** This section describes a proposed architecture for how AI agents could consume TrustOS in the future. The current implementation is client-side only.
