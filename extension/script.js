@@ -787,22 +787,22 @@ async function setTableauParameter(isSafe) {
 // ============================================================
 window.injectExtreme = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 2.0;  // 200% profit ratio = extreme
+    CONFIG.demoAnomalyValue = 2.0;  // 200% profit ratio = extreme LOCK
     runAudit();
 };
 window.injectModerate = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.18;  // 18% profit ratio = moderate spike
+    CONFIG.demoAnomalyValue = 0.30;  // 30% profit ratio = seasonal spike → LOCK
     runAudit();
 };
 window.injectSubtle = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.14;  // 14% profit ratio = subtle
+    CONFIG.demoAnomalyValue = 0.25;  // 25% profit ratio = subtle → WARNING/LOCK
     runAudit();
 };
 window.injectDuplicate = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.13;  // 13% profit ratio = duplicate inflation
+    CONFIG.demoAnomalyValue = 0.20;  // 20% profit ratio = duplicate → WARNING/LOCK
     runAudit();
 };
 window.resetNormal = function () {
