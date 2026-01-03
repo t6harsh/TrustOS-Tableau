@@ -110,15 +110,30 @@
         </div>
     </div>
 
-    <!-- Simulation Controls (for demonstration purposes) -->
-    <div class="demo-controls">
-        <button id="thresholdToggle" class="demo-btn threshold" onclick="toggleThresholdMode()">🔒 Strict Mode</button>
-        <button class="demo-btn trigger" onclick="triggerAnomaly()">⚠️ Simulate Regression</button>
-        <button class="demo-btn reset" onclick="resetNormal()">✅ Restore Clean State</button>
+    <!-- Demo Controls Panel -->
+    <div class="demo-controls-panel">
+        <!-- Threshold Slider -->
+        <div class="threshold-control">
+            <label>Threshold: <span id="thresholdValue">2.5</span></label>
+            <input type="range" id="thresholdSlider" min="1.5" max="5.0" step="0.1" value="2.5"
+                oninput="updateThreshold(this.value)">
+            <div class="threshold-labels">
+                <span>Strict</span>
+                <span>Relaxed</span>
+            </div>
+        </div>
+
+        <!-- Injection Buttons -->
+        <div class="injection-buttons">
+            <button class="demo-btn subtle" onclick="injectSubtle()">🔍 Subtle (28%)</button>
+            <button class="demo-btn moderate" onclick="injectModerate()">📊 Moderate (29.5%)</button>
+            <button class="demo-btn extreme" onclick="injectExtreme()">💥 Extreme (2400%)</button>
+            <button class="demo-btn reset" onclick="resetNormal()">✅ Reset</button>
+        </div>
     </div>
 
-    <!-- TrustOS Script (v11 for cache bust) -->
-    <script src="script.js?v=11"></script>
+    <!-- TrustOS Script (v12 for cache bust) -->
+    <script src="script.js?v=12"></script>
 </body>
 
 </html>

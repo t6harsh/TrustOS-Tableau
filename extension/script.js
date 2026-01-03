@@ -28,12 +28,10 @@ const CONFIG = {
     absoluteMin: 5,   // Below this is always an error
     absoluteMax: 50,  // Above this is always an error
 
-    // Z-Score thresholds
-    zScoreThresholdStrict: 2.5,   // Default: Strict mode
-    zScoreThresholdRelaxed: 4.0,  // Relaxed: For expected business spikes (Black Friday, etc.)
-
-    // Active threshold mode (toggled by UI)
-    allowExpectedSpikes: false,
+    // Z-Score threshold (configurable via slider, range: 1.5 - 5.0)
+    zScoreThreshold: 2.5,  // Default threshold
+    zScoreThresholdMin: 1.5,
+    zScoreThresholdMax: 5.0,
 
     // Which worksheet to monitor (null = auto-detect with metric field)
     targetWorksheet: null,
@@ -50,9 +48,9 @@ const CONFIG = {
     demoAnomalyValue: 2400
 };
 
-// Get current active threshold
+// Get current active threshold (from slider)
 function getActiveThreshold() {
-    return CONFIG.allowExpectedSpikes ? CONFIG.zScoreThresholdRelaxed : CONFIG.zScoreThresholdStrict;
+    return CONFIG.zScoreThreshold;
 }
 
 // State
@@ -360,7 +358,6 @@ function calculateStatistics(values) {
 function determineStatus(latestValue, stats, zScore) {
     const threshold = getActiveThreshold();
     const confidence = Math.max(0, Math.min(100, 100 * (1 - zScore / threshold)));
-    const modeLabel = CONFIG.allowExpectedSpikes ? '(Relaxed)' : '(Strict)';
 
     let status, isSafe, message, color;
 
@@ -376,7 +373,7 @@ function determineStatus(latestValue, stats, zScore) {
         status = 'LOCKED';
         isSafe = false;
         color = '#dc3545';
-        message = `ANOMALY: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% (Z-Score: ${zScore.toFixed(1)} > ${threshold} ${modeLabel}). Dashboard Locked.`;
+        message = `ANOMALY: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% (Z-Score: ${zScore.toFixed(1)} > ${threshold.toFixed(1)}). Dashboard Locked.`;
     }
     // Warning zone
     else if (zScore > threshold * 0.7) {
@@ -565,44 +562,65 @@ function updateTimelineUI() {
 // ============================================================
 
 /**
- * Simulate Logic Regression - adds corrupted data point to real analysis
- * 
- * This does NOT fake the detection. It simulates what happens when
- * a data pipeline has a logic error (e.g., decimal shift, currency flip).
+ * Inject Extreme Anomaly - decimal shift error (2400%)
+ */
+function injectExtreme() {
+    console.log('💥 SIMULATION: Extreme anomaly - decimal shift error...');
+    CONFIG.demoAnomalyActive = true;
+    CONFIG.demoAnomalyValue = 2400;
+    runAudit();
+}
+
+/**
+ * Inject Moderate Anomaly - seasonal spike (29.5%)
+ */
+function injectModerate() {
+    console.log('📊 SIMULATION: Moderate anomaly - seasonal spike...');
+    CONFIG.demoAnomalyActive = true;
+    CONFIG.demoAnomalyValue = 29.5;
+    runAudit();
+}
+
+/**
+ * Inject Subtle Anomaly - currency conversion error (28.2%)
+ */
+function injectSubtle() {
+    console.log('🔍 SIMULATION: Subtle anomaly - currency conversion error...');
+    CONFIG.demoAnomalyActive = true;
+    CONFIG.demoAnomalyValue = 28.2;
+    runAudit();
+}
+
+/**
+ * Legacy function for backward compatibility
  */
 function triggerAnomaly() {
-    console.log('⚠️ SIMULATION: Logic regression detected in data pipeline...');
-    CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 2400;  // Simulates decimal shift error
-    runAudit();  // Re-run with corrupted value
+    injectExtreme();
 }
 
 /**
  * Restore Clean State - removes simulated regression
  */
 function resetNormal() {
-    console.log('✅ SIMULATION: Logic regression resolved, clean state restored...');
+    console.log('✅ SIMULATION: Clean state restored...');
     CONFIG.demoAnomalyActive = false;
-    runAudit();  // Re-run with only real data
+    runAudit();
 }
 
 /**
- * Toggle between Strict and Relaxed threshold modes
- * Addresses "Black Friday" problem - allows expected business spikes
+ * Update threshold from slider
  */
-function toggleThresholdMode() {
-    CONFIG.allowExpectedSpikes = !CONFIG.allowExpectedSpikes;
-    const mode = CONFIG.allowExpectedSpikes ? 'RELAXED (Z > 4.0)' : 'STRICT (Z > 2.5)';
-    console.log(`🔧 Threshold mode changed to: ${mode}`);
+function updateThreshold(value) {
+    CONFIG.zScoreThreshold = parseFloat(value);
+    console.log(`🎚️ Threshold updated to: ${CONFIG.zScoreThreshold.toFixed(1)}`);
 
-    // Update toggle button appearance
-    const toggleBtn = document.getElementById('thresholdToggle');
-    if (toggleBtn) {
-        toggleBtn.textContent = CONFIG.allowExpectedSpikes ? '🔓 Relaxed Mode' : '🔒 Strict Mode';
-        toggleBtn.classList.toggle('relaxed', CONFIG.allowExpectedSpikes);
+    // Update display
+    const display = document.getElementById('thresholdValue');
+    if (display) {
+        display.textContent = CONFIG.zScoreThreshold.toFixed(1);
     }
 
-    runAudit();  // Re-run with new threshold
+    runAudit();
 }
 
 // Initialize
