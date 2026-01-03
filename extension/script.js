@@ -783,26 +783,26 @@ async function setTableauParameter(isSafe) {
 }
 
 // ============================================================
-// DEMO CONTROLS (Calibrated for Superstore Profit Ratio -0.17 to 0.27)
+// DEMO CONTROLS (Data range: -0.17 to 0.27, Mean ~0.05, Std ~0.10)
 // ============================================================
 window.injectExtreme = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 2.0;  // 200% profit = massive outlier → LOCK
+    CONFIG.demoAnomalyValue = 1.5;  // 150% profit = definite LOCK
     runAudit();
 };
 window.injectModerate = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.50;  // 50% profit = way above range → LOCK
+    CONFIG.demoAnomalyValue = 0.35;  // 35% = above max → borderline LOCK
     runAudit();
 };
 window.injectSubtle = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.40;  // 40% profit = above max (0.27) → LOCK
+    CONFIG.demoAnomalyValue = 0.30;  // 30% = slight anomaly → WARNING
     runAudit();
 };
 window.injectDuplicate = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.35;  // 35% profit = just above max → WARNING/LOCK
+    CONFIG.demoAnomalyValue = 0.28;  // 28% = just at edge → WARNING
     runAudit();
 };
 window.resetNormal = function () {
