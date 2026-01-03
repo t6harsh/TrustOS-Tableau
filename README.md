@@ -129,35 +129,54 @@ if (worstMetric.zScore > threshold) {
 
 ---
 
-## 🔍 Multi-Signal Detection Engine (v21)
+## 🔍 Ensemble Detection Engine (v22)
 
 > **Note:** These are rule-based heuristics, not machine learning models. They use statistical signatures to detect and classify anomalies.
 
-TrustOS v21 uses a **multi-signal detection architecture** instead of relying on a single Z-Score threshold. This dramatically reduces false positives while catching more subtle issues.
+TrustOS v22 introduces **Ensemble Detection**—a weighted voting system where different detector categories contribute proportionally to a final **Trust Score (0-100)**.
 
-### Signal Detectors (8 Total)
+### Architecture: Weighted Detector Categories
 
-| # | Signal | Detection Rule | Severity | Typical Cause |
-|---|--------|---------------|----------|---------------|
-| 1 | `Z_SCORE` | Z-Score > threshold | HIGH/CRITICAL | Statistical outlier |
-| 2 | `BUSINESS_RULE` | Value < 5% or > 60% | CRITICAL | Outside valid business range |
-| 3 | `RATE_OF_CHANGE` | >15% change from previous | HIGH/CRITICAL | Sudden data shift |
-| 4 | `DUPLICATE_INFLATION` | 8-15% above mean | MEDIUM | JOIN explosion / row duplication |
-| 5 | `CURRENCY_FLIP` | 15-25% above mean | MEDIUM | Currency conversion error (EUR/USD) |
-| 6 | `DECIMAL_SHIFT` | Value > 50× mean | CRITICAL | Unit/decimal conversion in ETL |
-| 7 | `NEGATIVE_VALUE` | Value < 0 | CRITICAL | Invalid negative for this metric |
-| 8 | `HIGH_ZSCORE` | Z > 70% of threshold | LOW | Approaching threshold (early warning) |
+| Category | Weight | Detectors | Rationale |
+|----------|--------|-----------|-----------|
+| **STATISTICAL** | 40% | Z_SCORE, HIGH_ZSCORE | Core statistical anomaly detection |
+| **BUSINESS** | 35% | BUSINESS_RULE, NEGATIVE_VALUE, DECIMAL_SHIFT | Domain-specific constraints |
+| **TEMPORAL** | 25% | RATE_OF_CHANGE, DUPLICATE_INFLATION, CURRENCY_FLIP, DUPLICATE_ROWS | Time-based and pattern detection |
 
-### Decision Logic: WARNING vs LOCK
+### Signal Detectors (9 Total)
 
-TrustOS uses **consensus-based locking** rather than single-signal decisions:
+| # | Signal | Category | Detection Rule | Penalty |
+|---|--------|----------|----------------|---------|
+| 1 | `Z_SCORE` | STATISTICAL | Z-Score > threshold | 80 |
+| 2 | `HIGH_ZSCORE` | STATISTICAL | Z > 70% of threshold | 40 |
+| 3 | `BUSINESS_RULE` | BUSINESS | Value < 5% or > 60% | 90 |
+| 4 | `NEGATIVE_VALUE` | BUSINESS | Value < 0 | 100 |
+| 5 | `DECIMAL_SHIFT` | BUSINESS | Value > 50× mean | 100 |
+| 6 | `RATE_OF_CHANGE` | TEMPORAL | >15% change from previous | 60 |
+| 7 | `DUPLICATE_INFLATION` | TEMPORAL | 8-15% above mean | 50 |
+| 8 | `CURRENCY_FLIP` | TEMPORAL | 15-25% above mean | 50 |
+| 9 | `DUPLICATE_ROWS` | TEMPORAL | Actual duplicate rows in data | 70 |
 
-| Condition | Result | Rationale |
-|-----------|--------|-----------|
-| 1 LOW/MEDIUM signal | ⚠️ **WARNING** | Dashboard visible, user notified |
-| 2+ signals (any severity) | ⛔ **LOCK** | Consensus: multiple issues = real problem |
-| 1 CRITICAL signal | ⛔ **LOCK** | Immediate: critical issues bypass consensus |
-| Persistent anomaly (2/3 evals) | ⛔ **LOCK** | Pattern: intermittent issues get caught |
+### Trust Score Calculation
+
+Each signal applies its **penalty** to its **category**. Categories are then weighted:
+
+```javascript
+trustScore = 100 - (
+    (STATISTICAL_penalty × 0.40) +
+    (BUSINESS_penalty × 0.35) +
+    (TEMPORAL_penalty × 0.25)
+);
+```
+
+### Decision Logic: TrustScore Thresholds
+
+| Trust Score | State | Action |
+|-------------|-------|--------|
+| ≥90 | ✅ **SAFE** | Dashboard visible, full access |
+| 65-89 | ⚠️ **WARNING** | Dashboard visible, user alerted |
+| <65 | ⛔ **LOCK** | Dashboard blocked, investigation required |
+| Persistent anomaly | -15 penalty | Additional penalty if 2/3 evals had signals |
 
 ### Persistence Confirmation
 
