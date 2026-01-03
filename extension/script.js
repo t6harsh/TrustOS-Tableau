@@ -352,8 +352,169 @@ function calculateStatistics(values) {
     return { mean, std, min, max, count: n };
 }
 
+// ============================================================
+// NOVEL FEATURES: Innovation that sets TrustOS apart
+// ============================================================
+
+/**
+ * NOVEL FEATURE 1: Anomaly Fingerprinting
+ * Classifies the TYPE of anomaly based on magnitude and pattern
+ * Returns: { pattern, description, likelihood, icon }
+ */
+function fingerprintAnomaly(latestValue, stats, zScore) {
+    const deviation = latestValue - stats.mean;
+    const multiplier = latestValue / stats.mean;
+
+    // Pattern classification based on characteristics
+    if (multiplier > 50) {
+        return {
+            pattern: 'DECIMAL_SHIFT',
+            description: 'Likely decimal/unit conversion error (100x baseline)',
+            likelihood: 95,
+            icon: '🔢',
+            rootCause: 'Check ETL decimal handling or unit conversions'
+        };
+    } else if (multiplier > 1.15 && multiplier < 1.25) {
+        return {
+            pattern: 'CURRENCY_FLIP',
+            description: 'Possible currency conversion error (~1.2x)',
+            likelihood: 75,
+            icon: '💱',
+            rootCause: 'Check currency conversion logic (EUR/USD swap?)'
+        };
+    } else if (zScore > 2 && zScore < 4 && deviation > 0) {
+        return {
+            pattern: 'SEASONAL_SPIKE',
+            description: 'Unusual positive spike - verify if expected',
+            likelihood: 60,
+            icon: '📈',
+            rootCause: 'Could be legitimate (Black Friday) or duplicate rows'
+        };
+    } else if (zScore > 2 && zScore < 4 && deviation < 0) {
+        return {
+            pattern: 'DATA_DROP',
+            description: 'Unusual negative deviation',
+            likelihood: 70,
+            icon: '📉',
+            rootCause: 'Check for missing data or filter errors'
+        };
+    } else if (multiplier > 1.05 && multiplier < 1.12) {
+        return {
+            pattern: 'DUPLICATE_INFLATION',
+            description: 'Possible duplicate row inflation (~8%)',
+            likelihood: 55,
+            icon: '📋',
+            rootCause: 'Check join logic for duplicate aggregation'
+        };
+    }
+
+    return {
+        pattern: 'UNKNOWN',
+        description: 'Anomaly detected - pattern unclassified',
+        likelihood: 40,
+        icon: '❓',
+        rootCause: 'Manual investigation recommended'
+    };
+}
+
+/**
+ * NOVEL FEATURE 2: Predictive Trust
+ * Analyzes trend to predict if trust is about to fail
+ * Uses last N values to calculate trajectory
+ */
+let recentValues = [];  // Store last 10 values for trend analysis
+
+function predictTrustTrajectory(latestValue, stats, threshold) {
+    // Add to recent values (keep last 10)
+    recentValues.push(latestValue);
+    if (recentValues.length > 10) recentValues.shift();
+
+    if (recentValues.length < 3) {
+        return { prediction: null, message: 'Gathering trend data...' };
+    }
+
+    // Calculate trend using linear regression on Z-scores
+    const recentZScores = recentValues.map(v =>
+        stats.std > 0 ? Math.abs((v - stats.mean) / stats.std) : 0
+    );
+
+    // Simple linear regression for trend
+    const n = recentZScores.length;
+    const xMean = (n - 1) / 2;
+    const yMean = recentZScores.reduce((a, b) => a + b, 0) / n;
+
+    let numerator = 0, denominator = 0;
+    for (let i = 0; i < n; i++) {
+        numerator += (i - xMean) * (recentZScores[i] - yMean);
+        denominator += (i - xMean) * (i - xMean);
+    }
+
+    const slope = denominator !== 0 ? numerator / denominator : 0;
+    const currentZ = recentZScores[recentZScores.length - 1];
+
+    // Predict steps until threshold breach
+    if (slope > 0.1 && currentZ < threshold) {
+        const stepsToThreshold = Math.ceil((threshold - currentZ) / slope);
+        if (stepsToThreshold <= 5) {
+            return {
+                prediction: 'APPROACHING_FAILURE',
+                stepsRemaining: stepsToThreshold,
+                slope: slope.toFixed(2),
+                message: `⚠️ PREDICTIVE WARNING: Trust may fail in ${stepsToThreshold} evaluations`,
+                icon: '🔮'
+            };
+        }
+    } else if (slope < -0.1 && currentZ > threshold * 0.8) {
+        return {
+            prediction: 'RECOVERING',
+            slope: slope.toFixed(2),
+            message: '📈 Trend: Metric recovering toward normal range',
+            icon: '↗️'
+        };
+    }
+
+    return {
+        prediction: 'STABLE',
+        slope: slope.toFixed(2),
+        message: 'Trend stable',
+        icon: '➡️'
+    };
+}
+
+/**
+ * NOVEL FEATURE 3: Trust Propagation
+ * Identifies related metrics that may be affected
+ */
+const METRIC_RELATIONSHIPS = {
+    'Gross_Margin': ['Revenue', 'COGS', 'Profit', 'Profit_Margin'],
+    'Revenue': ['Gross_Margin', 'Units_Sold', 'ASP', 'Total_Sales'],
+    'Profit': ['Revenue', 'COGS', 'Gross_Margin', 'Expenses'],
+    'default': ['Related metrics may be affected']
+};
+
+function propagateTrust(heroMetric, isSafe) {
+    const relatedMetrics = METRIC_RELATIONSHIPS[heroMetric] || METRIC_RELATIONSHIPS['default'];
+
+    if (!isSafe) {
+        return {
+            affected: relatedMetrics,
+            status: 'SUSPECT',
+            message: `⚠️ Trust cascade: ${relatedMetrics.join(', ')} now SUSPECT`,
+            icon: '🌐'
+        };
+    }
+
+    return {
+        affected: relatedMetrics,
+        status: 'VERIFIED',
+        message: 'Related metrics trusted',
+        icon: '✅'
+    };
+}
+
 /**
  * Determine status based on Z-Score and absolute bounds
+ * Now includes: Anomaly Fingerprinting, Predictive Trust, Trust Propagation
  */
 function determineStatus(latestValue, stats, zScore) {
     const threshold = getActiveThreshold();
@@ -390,6 +551,11 @@ function determineStatus(latestValue, stats, zScore) {
         message = `TrustOS Verified: ${CONFIG.heroMetricName} is ${latestValue.toFixed(1)}% - Normal (Z-Score: ${zScore.toFixed(1)}).`;
     }
 
+    // === NOVEL FEATURES ===
+    const fingerprint = (!isSafe || zScore > 1.5) ? fingerprintAnomaly(latestValue, stats, zScore) : null;
+    const prediction = predictTrustTrajectory(latestValue, stats, threshold);
+    const propagation = propagateTrust(CONFIG.heroMetricField, isSafe);
+
     return {
         status,
         isSafe,
@@ -402,7 +568,10 @@ function determineStatus(latestValue, stats, zScore) {
         confidence: parseFloat(confidence.toFixed(1)),
         dataPoints: stats.count,
         threshold: threshold,
-        thresholdMode: CONFIG.allowExpectedSpikes ? 'relaxed' : 'strict'
+        // Novel features
+        fingerprint,
+        prediction,
+        propagation
     };
 }
 
@@ -476,6 +645,11 @@ function updateUIState(state, data = {}) {
             badge.innerHTML = '<span class="status-icon">⚠</span><span>Error</span>';
             alertMessage.textContent = data.message || 'Analysis failed.';
             break;
+    }
+
+    // Update Novel Insights panel
+    if (data.fingerprint || data.prediction || data.propagation) {
+        updateNovelInsightsUI(data);
     }
 
     document.getElementById('last-checked').textContent = new Date().toLocaleTimeString();
@@ -553,6 +727,46 @@ function updateTimelineUI() {
     }).join('');
 
     container.innerHTML = html;
+}
+
+/**
+ * Update Novel Insights UI with fingerprint, prediction, and propagation
+ */
+function updateNovelInsightsUI(data) {
+    // Fingerprint Panel
+    const fingerprintPanel = document.getElementById('fingerprint-panel');
+    if (fingerprintPanel && data.fingerprint) {
+        fingerprintPanel.classList.remove('hidden');
+        fingerprintPanel.classList.toggle('danger', !data.isSafe);
+        fingerprintPanel.classList.toggle('warning', data.isSafe && data.zScore > 1.5);
+        document.getElementById('fingerprint-icon').textContent = data.fingerprint.icon;
+        document.getElementById('fingerprint-pattern').textContent = data.fingerprint.pattern.replace('_', ' ');
+        document.getElementById('fingerprint-desc').textContent = data.fingerprint.rootCause;
+    } else if (fingerprintPanel) {
+        fingerprintPanel.classList.add('hidden');
+    }
+
+    // Prediction Panel
+    const predictionPanel = document.getElementById('prediction-panel');
+    if (predictionPanel && data.prediction) {
+        document.getElementById('prediction-icon').textContent = data.prediction.icon || '🔮';
+        document.getElementById('prediction-status').textContent = data.prediction.prediction || 'Trend Analysis';
+        document.getElementById('prediction-message').textContent = data.prediction.message;
+        predictionPanel.classList.toggle('warning', data.prediction.prediction === 'APPROACHING_FAILURE');
+    }
+
+    // Propagation Panel
+    const propagationPanel = document.getElementById('propagation-panel');
+    if (propagationPanel && data.propagation) {
+        if (!data.isSafe) {
+            propagationPanel.classList.remove('hidden');
+            propagationPanel.classList.add('danger');
+            document.getElementById('propagation-status').textContent = 'TRUST CASCADE';
+            document.getElementById('propagation-message').textContent = data.propagation.message;
+        } else {
+            propagationPanel.classList.add('hidden');
+        }
+    }
 }
 
 // ============================================================

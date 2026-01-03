@@ -87,6 +87,38 @@
                 </div>
             </div>
 
+            <!-- Novel Insights Panel -->
+            <div class="novel-insights">
+                <div class="insight-header">🧠 AI Insights</div>
+
+                <!-- Fingerprint -->
+                <div id="fingerprint-panel" class="insight-item hidden">
+                    <span id="fingerprint-icon" class="insight-icon">🔍</span>
+                    <div class="insight-content">
+                        <div id="fingerprint-pattern" class="insight-title">--</div>
+                        <div id="fingerprint-desc" class="insight-desc">--</div>
+                    </div>
+                </div>
+
+                <!-- Prediction -->
+                <div id="prediction-panel" class="insight-item">
+                    <span id="prediction-icon" class="insight-icon">🔮</span>
+                    <div class="insight-content">
+                        <div id="prediction-status" class="insight-title">Trend Analysis</div>
+                        <div id="prediction-message" class="insight-desc">Gathering data...</div>
+                    </div>
+                </div>
+
+                <!-- Propagation -->
+                <div id="propagation-panel" class="insight-item hidden">
+                    <span class="insight-icon">🌐</span>
+                    <div class="insight-content">
+                        <div id="propagation-status" class="insight-title">Trust Cascade</div>
+                        <div id="propagation-message" class="insight-desc">--</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Footer -->
             <div class="footer">
                 Last checked: <span id="last-checked">Never</span>
@@ -132,8 +164,8 @@
         </div>
     </div>
 
-    <!-- TrustOS Script (v12 for cache bust) -->
-    <script src="script.js?v=12"></script>
+    <!-- TrustOS Script (v13 for cache bust) -->
+    <script src="script.js?v=13"></script>
 </body>
 
 </html>
