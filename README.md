@@ -71,6 +71,12 @@ Modern data stacks ensure pipelines execute correctly. But they don't ensure the
 
 This is not an alert. Not a dashboard. It's a **semantic contract** between data and all consumers.
 
+> ### 🎯 Why This Is New (TL;DR for Judges)
+> 1. **`DecisionTrustState` = new primitive** — A boolean parameter that gates dashboard access
+> 2. **Consumption-layer enforcement** — Blocks at the dashboard, not just alerts
+> 3. **Consensus-based ensemble** — 9 detectors vote, not a single threshold
+> 4. **Native Tableau gating** — Uses Dynamic Zone Visibility, not custom overlays
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        WITH TRUSTOS                                      │
@@ -180,7 +186,7 @@ trustScore = 100 - (
 
 ### 🔬 Tableau-Deep Signal: Row-Level Duplicate Detection
 
-**This is TrustOS's deepest Tableau integration.** We use the [VizQL Data Service](https://help.tableau.com/current/api/extensions_api/en-us/reference.htm) (`getSummaryDataReaderAsync`) to access actual row-level data—not just aggregated values.
+**This is TrustOS's deepest Tableau integration.** We use the Tableau Extensions API with row-level access (`getSummaryDataReaderAsync`) to access actual row-level data—not just aggregated values.
 
 ```javascript
 // Access row-level data via Tableau Extensions API
@@ -373,7 +379,7 @@ The extension includes a **live demo panel** integrated into the UI:
 
 | Step | Action | Expected Response |
 |------|--------|-------------------|
-| 1 | Load dashboard | ✅ SAFE, 0 signals, Confidence ~100% |
+| 1 | Load dashboard | ✅ SAFE, 0 signals, Trust Score ~100 |
 | 2 | Click **Extreme** | ⛔ LOCK immediately (Z-Score ~1273) |
 | 3 | Click **Force Unlock** | ✅ SAFE (history cleared) |
 | 4 | Click **Subtle** | ⛔ LOCK (2 signals: CURRENCY_FLIP + HIGH_ZSCORE) |
@@ -513,7 +519,7 @@ TrustOS isn't just JavaScript + statistics. It's deeply integrated with Tableau'
 | **Extensions API** | Real-time access to worksheet data via `getSummaryDataReaderAsync()` |
 | **Parameters API** | `DecisionTrustState` as a first-class Tableau object |
 | **Dynamic Zone Visibility** | Native UI gating—no custom overlays |
-| **VizQL Semantics** | Operates on the same aggregated data users see |
+| **Aggregation Semantics** | Operates on the same aggregated data users see |
 
 > An external tool would require ETL → Database → API → Dashboard. TrustOS operates **at the point of consumption**, inside the visualization layer.
 
