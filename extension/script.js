@@ -47,9 +47,9 @@ const CONFIG = {
         TEMPORAL: 0.25       // Rate of Change, Duplicate Inflation, Currency Flip
     },
 
-    // Trust Score Thresholds
-    trustScoreWarning: 70,   // Below this = WARNING
-    trustScoreLock: 40,      // Below this = LOCK
+    // Trust Score Thresholds (v22.1 - more responsive)
+    trustScoreWarning: 90,   // Below this = WARNING
+    trustScoreLock: 65,      // Below this = LOCK
 
     targetWorksheet: null,
     safetyParameter: 'DecisionTrustState',
@@ -426,11 +426,10 @@ function calculateEnsembleTrustScore(latestValue, stats, signals, duplicateInfo)
         const detector = DETECTOR_REGISTRY[signal.type];
         if (!detector) continue;
 
+        // All severities apply full base penalty, CRITICAL gets bonus
         const penalty = signal.severity === 'CRITICAL'
             ? detector.criticalPenalty
-            : signal.severity === 'HIGH'
-                ? detector.basePenalty
-                : detector.basePenalty * 0.5;  // LOW severity = half penalty
+            : detector.basePenalty;  // No reduction for LOW/MEDIUM
 
         categoryPenalties[detector.category] += penalty;
     }
