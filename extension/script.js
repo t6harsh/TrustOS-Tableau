@@ -512,13 +512,34 @@ function generateFingerprint(signals) {
     const high = signals.find(s => s.severity === 'HIGH');
     const primary = critical || high || signals[0];
 
+    // Voting summary: which detectors voted and how
+    const votingSummary = {
+        total: signals.length,
+        critical: signals.filter(s => s.severity === 'CRITICAL').length,
+        high: signals.filter(s => s.severity === 'HIGH').length,
+        medium: signals.filter(s => s.severity === 'MEDIUM').length,
+        low: signals.filter(s => s.severity === 'LOW').length,
+        categories: {
+            STATISTICAL: signals.filter(s => s.category === 'STATISTICAL').length,
+            BUSINESS: signals.filter(s => s.category === 'BUSINESS').length,
+            TEMPORAL: signals.filter(s => s.category === 'TEMPORAL').length
+        }
+    };
+
     return {
         pattern: primary.type,
         description: primary.message,
         icon: primary.icon,
         category: primary.category,
         rootCause: getRootCause(primary.type),
-        allSignals: signals.map(s => ({ type: s.type, category: s.category }))
+        recommendedAction: getRecommendedAction(primary.type),
+        votingSummary,
+        allSignals: signals.map(s => ({
+            type: s.type,
+            category: s.category,
+            severity: s.severity,
+            message: s.message
+        }))
     };
 }
 
@@ -535,6 +556,21 @@ function getRootCause(signalType) {
         'DUPLICATE_ROWS': 'Actual duplicate rows detected in data'
     };
     return causes[signalType] || 'Manual investigation required';
+}
+
+function getRecommendedAction(signalType) {
+    const actions = {
+        'Z_SCORE': '🔍 Query raw data, compare to historical baseline',
+        'HIGH_ZSCORE': '📊 Monitor closely, consider lowering threshold',
+        'BUSINESS_RULE': '📋 Verify data source, check filter conditions',
+        'RATE_OF_CHANGE': '🔄 Check recent ETL jobs, verify data refresh timestamp',
+        'DUPLICATE_INFLATION': '🔗 Audit JOIN conditions, check for fanout',
+        'CURRENCY_FLIP': '💱 Verify currency field mapping in ETL',
+        'DECIMAL_SHIFT': '🔢 Check number format and unit conversions',
+        'NEGATIVE_VALUE': '➖ Review calculation logic, check for sign flips',
+        'DUPLICATE_ROWS': '📋 Run SELECT DISTINCT, check primary keys'
+    };
+    return actions[signalType] || '🔍 Investigate manually';
 }
 
 function propagateTrust(heroMetric, isSafe) {
@@ -665,23 +701,34 @@ function updateNovelInsightsUI(data) {
     if (fpPanel) {
         if (data.fingerprint) {
             fpPanel.classList.remove('hidden');
-            setText('fingerprint-pattern', `${data.fingerprint.pattern} [${data.fingerprint.category}]`);
-            setText('fingerprint-desc', data.fingerprint.description);
+            // Show pattern with voting summary
+            const fp = data.fingerprint;
+            const vs = fp.votingSummary;
+            const votingText = vs ? `${vs.total} votes: ${vs.critical}C/${vs.high}H/${vs.medium}M/${vs.low}L` : '';
+            setText('fingerprint-pattern', `${fp.pattern} [${fp.category}]`);
+            setText('fingerprint-desc', fp.recommendedAction || fp.description);
         } else {
             fpPanel.classList.add('hidden');
         }
     }
 
-    // Show category breakdown
+    // Show category breakdown and voting details
     if (data.categoryBreakdown) {
         const cb = data.categoryBreakdown;
         setText('prediction-status', `Ensemble Score`);
+
+        // Show category scores with vote counts
+        let voteInfo = '';
+        if (data.fingerprint && data.fingerprint.votingSummary) {
+            const vs = data.fingerprint.votingSummary.categories;
+            voteInfo = ` | Votes: S:${vs.STATISTICAL} B:${vs.BUSINESS} T:${vs.TEMPORAL}`;
+        }
         setText('prediction-message',
-            `STAT: ${cb.statistical.score.toFixed(0)} | BIZ: ${cb.business.score.toFixed(0)} | TEMP: ${cb.temporal.score.toFixed(0)}`
+            `STAT: ${cb.statistical.score.toFixed(0)} | BIZ: ${cb.business.score.toFixed(0)} | TEMP: ${cb.temporal.score.toFixed(0)}${voteInfo}`
         );
     } else if (data.signalDetails && data.signalDetails.length > 0) {
-        setText('prediction-status', `${data.signalDetails.length} Signals`);
-        setText('prediction-message', data.signalDetails.map(s => s.type).join(', '));
+        setText('prediction-status', `${data.signalDetails.length} Signals Fired`);
+        setText('prediction-message', data.signalDetails.map(s => `${s.type}`).join(', '));
     } else {
         setText('prediction-status', 'All Clear');
         setText('prediction-message', 'No anomalies detected');
