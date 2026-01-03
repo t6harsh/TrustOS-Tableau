@@ -19,9 +19,9 @@ const CONFIG = {
     heroMetricName: 'Profit Ratio',
     timeField: 'Date',
 
-    // Business Rule Bounds (adjusted for Superstore's Profit Ratio ~5-20%)
-    absoluteMin: -10,    // Profit can go negative
-    absoluteMax: 40,     // Very high profit ratio is suspicious
+    // Business Rule Bounds (Superstore Profit Ratio: -0.17 to 0.27 in decimals)
+    absoluteMin: -0.20,    // Below -20% profit ratio is suspicious
+    absoluteMax: 0.35,     // Above 35% profit ratio is suspicious
 
     // Z-Score Settings
     zScoreThreshold: 2.5,
@@ -783,26 +783,26 @@ async function setTableauParameter(isSafe) {
 }
 
 // ============================================================
-// DEMO CONTROLS (Calibrated for Superstore Profit Ratio ~12%)
+// DEMO CONTROLS (Calibrated for Superstore Profit Ratio -0.17 to 0.27)
 // ============================================================
 window.injectExtreme = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 2.0;  // 200% profit ratio = extreme LOCK
+    CONFIG.demoAnomalyValue = 2.0;  // 200% profit = massive outlier → LOCK
     runAudit();
 };
 window.injectModerate = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.30;  // 30% profit ratio = seasonal spike → LOCK
+    CONFIG.demoAnomalyValue = 0.50;  // 50% profit = way above range → LOCK
     runAudit();
 };
 window.injectSubtle = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.25;  // 25% profit ratio = subtle → WARNING/LOCK
+    CONFIG.demoAnomalyValue = 0.40;  // 40% profit = above max (0.27) → LOCK
     runAudit();
 };
 window.injectDuplicate = function () {
     CONFIG.demoAnomalyActive = true;
-    CONFIG.demoAnomalyValue = 0.20;  // 20% profit ratio = duplicate → WARNING/LOCK
+    CONFIG.demoAnomalyValue = 0.35;  // 35% profit = just above max → WARNING/LOCK
     runAudit();
 };
 window.resetNormal = function () {
