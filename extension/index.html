@@ -19,77 +19,113 @@
 </head>
 
 <body class="state-loading">
-    <!-- Main Container -->
-    <div class="trustos-container">
-        <div class="glass-card">
-            <!-- Logo -->
-            <div class="trustos-logo">
-                <div class="logo-icon">🛡️</div>
-                <span class="logo-text">TrustOS</span>
-            </div>
-            <p class="tagline">Dashboard Safety Layer</p>
-
-            <!-- Status Badge -->
-            <div id="status-badge" class="status-badge loading">
-                <span class="status-icon"><span class="loading-spinner"></span></span>
-                <span id="status-text">Initializing</span>
-            </div>
-
-            <!-- Alert Message -->
-            <p id="alert-message" class="alert-message">
-                Connecting to TrustOS backend...
-            </p>
-
-            <!-- Metric Display (shown on anomaly) -->
-            <div id="metric-display" class="metric-display">
-                <div class="metric-label">Detected Value</div>
-                <div id="metric-value" class="metric-value anomaly">--</div>
-                <div id="metric-baseline" class="metric-baseline">Historical range: 20% - 28%</div>
-            </div>
-
-            <!-- Stats Row -->
-            <div class="stats-row">
-                <div class="stat-item">
-                    <div id="stat-zscore" class="stat-value">--</div>
-                    <div class="stat-label">Z-Score</div>
+    <!-- Main Grid Layout for Green State -->
+    <div class="trustos-grid">
+        <!-- TOP ROW: Main Card + Controls -->
+        <div class="top-row">
+            <!-- Main Card (65%) -->
+            <div class="main-card glass-card">
+                <!-- Logo -->
+                <div class="trustos-logo">
+                    <div class="logo-icon">🛡️</div>
+                    <span class="logo-text">TrustOS</span>
                 </div>
-                <div class="stat-item">
-                    <div id="stat-baseline" class="stat-value">--</div>
-                    <div class="stat-label">Baseline</div>
+                <p class="tagline">Dashboard Safety Layer</p>
+
+                <!-- Status Badge -->
+                <div id="status-badge" class="status-badge loading">
+                    <span class="status-icon"><span class="loading-spinner"></span></span>
+                    <span id="status-text">Initializing</span>
                 </div>
-                <div class="stat-item">
-                    <div id="stat-checks" class="stat-value">--</div>
-                    <div class="stat-label">Checks</div>
+
+                <!-- Alert Message -->
+                <p id="alert-message" class="alert-message">
+                    Connecting to TrustOS backend...
+                </p>
+
+                <!-- Metric Display (shown on anomaly) -->
+                <div id="metric-display" class="metric-display">
+                    <div class="metric-label">Detected Value</div>
+                    <div id="metric-value" class="metric-value anomaly">--</div>
+                    <div id="metric-baseline" class="metric-baseline">Historical range: 20% - 28%</div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div id="stat-zscore" class="stat-value">--</div>
+                        <div class="stat-label">Z-Score</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="stat-baseline" class="stat-value">--</div>
+                        <div class="stat-label">Baseline</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="stat-checks" class="stat-value">--</div>
+                        <div class="stat-label">Checks</div>
+                    </div>
+                </div>
+
+                <!-- Confidence Meter -->
+                <div class="confidence-meter">
+                    <div class="meter-label">
+                        <span>Confidence Score</span>
+                        <span id="confidence-value">--%</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div id="meter-fill" class="meter-fill high" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="runAudit()">🔄 Re-Audit</button>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer">
+                    Last checked: <span id="last-checked">Never</span>
                 </div>
             </div>
 
-            <!-- Confidence Meter -->
-            <div class="confidence-meter">
-                <div class="meter-label">
-                    <span>Confidence Score</span>
-                    <span id="confidence-value">--%</span>
+            <!-- Controls Card (35%) -->
+            <div class="controls-card glass-card">
+                <div class="controls-header">🎛️ Demo Controls</div>
+
+                <!-- Threshold Slider -->
+                <div class="threshold-control">
+                    <label>Threshold: <span id="thresholdValue">2.5</span></label>
+                    <input type="range" id="thresholdSlider" min="1.5" max="5.0" step="0.1" value="2.5"
+                        oninput="updateThreshold(this.value)">
+                    <div class="threshold-labels">
+                        <span>Strict</span>
+                        <span>Relaxed</span>
+                    </div>
                 </div>
-                <div class="meter-bar">
-                    <div id="meter-fill" class="meter-fill high" style="width: 0%"></div>
+
+                <!-- Injection Buttons -->
+                <div class="injection-buttons-vertical">
+                    <button class="demo-btn subtle" onclick="injectSubtle()">🔍 Subtle (28%)</button>
+                    <button class="demo-btn moderate" onclick="injectModerate()">📊 Moderate (29.5%)</button>
+                    <button class="demo-btn extreme" onclick="injectExtreme()">💥 Extreme (2400%)</button>
+                    <button class="demo-btn reset" onclick="resetNormal()">✅ Reset</button>
                 </div>
             </div>
+        </div>
 
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button class="btn btn-primary" onclick="runAudit()">🔄 Re-Audit</button>
-            </div>
-
-            <!-- Trust Timeline -->
-            <div class="timeline-section">
-                <div class="timeline-header">Trust Timeline</div>
+        <!-- BOTTOM ROW: Timeline + AI Insights -->
+        <div class="bottom-row">
+            <!-- Timeline Panel (50%) -->
+            <div class="bottom-panel glass-card">
+                <div class="panel-header">📜 Trust Timeline</div>
                 <div id="trust-timeline" class="trust-timeline">
                     <div class="timeline-empty">No evaluations yet</div>
                 </div>
             </div>
 
-            <!-- Novel Insights Panel -->
-            <div class="novel-insights">
-                <div class="insight-header">🧠 AI Insights</div>
+            <!-- AI Insights Panel (50%) -->
+            <div class="bottom-panel glass-card">
+                <div class="panel-header">🧠 AI Insights</div>
 
                 <!-- Fingerprint -->
                 <div id="fingerprint-panel" class="insight-item hidden">
@@ -118,15 +154,10 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Footer -->
-            <div class="footer">
-                Last checked: <span id="last-checked">Never</span>
-            </div>
         </div>
     </div>
 
-    <!-- Safety Mode Full-Screen Overlay -->
+    <!-- Safety Mode Full-Screen Overlay (for RED state) -->
     <div id="safety-overlay" class="safety-overlay">
         <div class="safety-content">
             <div class="safety-header">
@@ -173,30 +204,8 @@
         </div>
     </div>
 
-    <!-- Demo Controls Panel -->
-    <div class="demo-controls-panel">
-        <!-- Threshold Slider -->
-        <div class="threshold-control">
-            <label>Threshold: <span id="thresholdValue">2.5</span></label>
-            <input type="range" id="thresholdSlider" min="1.5" max="5.0" step="0.1" value="2.5"
-                oninput="updateThreshold(this.value)">
-            <div class="threshold-labels">
-                <span>Strict</span>
-                <span>Relaxed</span>
-            </div>
-        </div>
-
-        <!-- Injection Buttons -->
-        <div class="injection-buttons">
-            <button class="demo-btn subtle" onclick="injectSubtle()">🔍 Subtle (28%)</button>
-            <button class="demo-btn moderate" onclick="injectModerate()">📊 Moderate (29.5%)</button>
-            <button class="demo-btn extreme" onclick="injectExtreme()">💥 Extreme (2400%)</button>
-            <button class="demo-btn reset" onclick="resetNormal()">✅ Reset</button>
-        </div>
-    </div>
-
-    <!-- TrustOS Script (v15 for cache bust) -->
-    <script src="script.js?v=15"></script>
+    <!-- TrustOS Script (v16 for cache bust) -->
+    <script src="script.js?v=16"></script>
 </body>
 
 </html>
