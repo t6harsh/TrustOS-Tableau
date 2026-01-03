@@ -258,7 +258,17 @@ function runAllDetectors(latestValue, previousValue, stats, allValues) {
         });
     }
 
-    // Signal 5: Decimal Shift (extreme multiplier)
+    // Signal 5: Currency Flip Detection (15-25% above, typical EUR/USD error)
+    if (multiplier > 1.15 && multiplier <= 1.25) {
+        signals.push({
+            type: 'CURRENCY_FLIP',
+            severity: 'MEDIUM',
+            message: `Value is ${((multiplier - 1) * 100).toFixed(0)}% above mean (possible currency conversion error)`,
+            icon: '💱'
+        });
+    }
+
+    // Signal 6: Decimal Shift (extreme multiplier)
     if (multiplier > 50) {
         signals.push({
             type: 'DECIMAL_SHIFT',
@@ -268,13 +278,24 @@ function runAllDetectors(latestValue, previousValue, stats, allValues) {
         });
     }
 
-    // Signal 6: Negative Value (for metrics that shouldn't be negative)
+    // Signal 7: Negative Value (for metrics that shouldn't be negative)
     if (latestValue < 0) {
         signals.push({
             type: 'NEGATIVE_VALUE',
             severity: 'CRITICAL',
             message: `Negative value detected: ${latestValue.toFixed(1)}%`,
             icon: '⛔'
+        });
+    }
+
+    // Signal 8: High Z-Score Warning (approaching threshold)
+    const warningZone = getActiveThreshold() * 0.7;
+    if (zScore > warningZone && zScore <= getActiveThreshold()) {
+        signals.push({
+            type: 'HIGH_ZSCORE',
+            severity: 'LOW',
+            message: `Z-Score ${zScore.toFixed(1)} approaching threshold (warning zone: >${warningZone.toFixed(1)})`,
+            icon: '⚠️'
         });
     }
 
