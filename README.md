@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/🛡️_TrustOS-Dashboard_Guardian-1a1a2e?style=for-the-badge&labelColor=2D3748" alt="TrustOS">
+  <img src="https://img.shields.io/badge/🛡️_TrustOS-Dashboard_Guardian-064e3b?style=for-the-badge&labelColor=022c22" alt="TrustOS">
 </p>
 
 <h1 align="center">TrustOS</h1>
@@ -16,13 +16,14 @@
   <img src="https://img.shields.io/badge/Tableau-Extensions_API-E97627?style=flat-square&logo=tableau&logoColor=white" alt="Tableau">
   <img src="https://img.shields.io/badge/Primitive-DecisionTrustState-4CAF50?style=flat-square" alt="Trust State">
   <img src="https://img.shields.io/badge/Analysis-Z--Score_Statistical-2196F3?style=flat-square" alt="Z-Score">
+  <img src="https://img.shields.io/badge/Theme-Emerald_Enterprise-022c22?style=flat-square" alt="Theme">
 </p>
 
 <p align="center">
   <a href="#-the-missing-layer">Problem</a> •
   <a href="#-decision-trust-state">Core Concept</a> •
+  <a href="#-pattern-detection-heuristics">Pattern Detection</a> •
   <a href="#-architecture">Architecture</a> •
-  <a href="#-ai-agent-gating">AI Gating</a> •
   <a href="#-demo">Demo</a>
 </p>
 
@@ -123,55 +124,81 @@ const worstMetric = trustScores.find(t => t.confidence === compositeTrust);
 if (worstMetric.zScore > threshold) {
     DecisionTrustState = UNTRUSTED;
     lockDashboard();
-    denyAgentAccess();
 }
 ```
 
 ---
 
-## 🧠 Novel AI Features
+## 🔍 Pattern Detection Heuristics
 
-What sets TrustOS apart from basic anomaly detection:
+> **Note:** These are rule-based heuristics, not machine learning models. They use simple statistical signatures to *suggest* root causes.
 
-### 1. Anomaly Fingerprinting 🔍
+When an anomaly triggers, TrustOS doesn't just say "Error". It attempts to classify the *type* of anomaly based on its statistical profile:
 
-**Classifies the root cause of anomalies, not just detection:**
+### Implemented Patterns
 
-| Pattern | Signature | Root Cause Suggestion |
-|---------|-----------|----------------------|
-| `DECIMAL_SHIFT` | 100x baseline | Check ETL decimal handling or unit conversions |
-| `CURRENCY_FLIP` | ~1.2x baseline | Check currency conversion logic (EUR/USD?) |
-| `DUPLICATE_INFLATION` | ~8% inflation | Check join logic for duplicate aggregation |
-| `SEASONAL_SPIKE` | Z: 2-4, positive | Black Friday or duplicate rows? |
-| `DATA_DROP` | Z: 2-4, negative | Missing data or filter errors |
+| Pattern | Detection Rule | Suggested Root Cause |
+|---------|---------------|----------------------|
+| `DECIMAL_SHIFT` | Value > 50× mean | Unit/decimal conversion error in ETL |
+| `CURRENCY_FLIP` | Value ~1.2× mean | Currency conversion logic may have flipped |
+| `SEASONAL_SPIKE` | Z > 2, positive direction | Could be legitimate seasonality or duplicate rows |
+| `DATA_DROP` | Z > 2, negative direction | Missing data partition or broken filter |
+| `UNKNOWN` | No pattern matched | Manual investigation needed |
 
-### 2. Predictive Trust 🔮
-
-**Warns BEFORE trust fails using trend analysis:**
+### How It Works (Honest Implementation)
 
 ```javascript
-// Linear regression on recent Z-scores
-const slope = calculateTrend(recentZScores);
-const stepsToThreshold = (threshold - currentZ) / slope;
-
-if (stepsToThreshold <= 5) {
-    warn("Trust may fail in " + stepsToThreshold + " evaluations");
+function fingerprintAnomaly(latestValue, stats, zScore) {
+    const multiplier = latestValue / stats.mean;
+    
+    if (multiplier > 50) {
+        return { pattern: 'DECIMAL_SHIFT', ... };
+    } else if (multiplier > 1.15 && multiplier < 1.25) {
+        return { pattern: 'CURRENCY_FLIP', ... };
+    }
+    // ... simple if-else rules, not ML
 }
 ```
 
-Output: *"⚠️ PREDICTIVE WARNING: Trust may fail in 3 evaluations"*
+### Trend Monitoring
 
-### 3. Trust Propagation 🌐
+TrustOS tracks the last 10 Z-Scores and runs a simple linear regression to detect if values are *drifting* toward the threshold. If the slope is positive and significant, it displays a warning.
 
-**Cascades trust failures to related metrics:**
+> This is basic regression, not predictive AI. It's useful for demos but not production-grade forecasting.
 
-| If This Fails | These Become SUSPECT |
-|---------------|---------------------|
-| Gross Margin | Revenue, COGS, Profit, Profit Margin |
-| Revenue | Gross Margin, Units Sold, ASP, Total Sales |
-| Profit | Revenue, COGS, Gross Margin, Expenses |
+### Related Metric Flagging
 
-> **Why this matters:** A currency error in Revenue doesn't just affect Revenue—it corrupts every downstream calculation.
+When a metric fails, TrustOS flags related metrics as `SUSPECT` using a hardcoded relationship map:
+
+```javascript
+const METRIC_RELATIONSHIPS = {
+    'Gross_Margin': ['Revenue', 'COGS', 'Profit'],
+    'Revenue': ['Gross_Margin', 'Units_Sold'],
+    // ... static mapping
+};
+```
+
+> This is not a parsed dependency graph. It's a manually defined lookup table.
+
+---
+
+## 💎 Emerald Enterprise UI (v20)
+
+For the hackathon, we invested heavily in a premium visual experience.
+
+### Vertical Stack Layout
+Optimized for the narrow extension zone (sidebar) in Tableau:
+- **Sticky Header** with brand info and Re-Audit button
+- **Scrollable Content Area** with full height utilization
+- **Integrated DevTools** embedded cleanly, not floating
+
+### Theme: Deep Emerald
+- Background: `#022c22` (Emerald 950)
+- Cards: `#064e3b` (Emerald 900)
+- Accents: `#10b981` (Emerald 500)
+- Glassmorphism with subtle glow borders
+
+This makes TrustOS look like a native, enterprise-grade component—not a hastily-built hackathon add-on.
 
 ---
 
@@ -198,8 +225,6 @@ In the age of Agentforce and autonomous AI, bad data doesn't just mislead humans
 └─────────────────────────────────────────────────────────────┘
 ```
 
-This pattern would allow agents to respect the same trust boundary that governs human consumers.
-
 > *"The same trust signal that locks the dashboard could gate automated decisions."*
 
 ---
@@ -220,39 +245,7 @@ Every evaluation is logged for auditability and debugging.
 
 ## ⚙️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         TABLEAU DASHBOARD                                │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                                                                   │  │
-│  │   ┌─────────────────────────────────────────────────────────┐    │  │
-│  │   │              TrustOS Decision Trust Fabric               │    │  │
-│  │   │                                                          │    │  │
-│  │   │  ┌──────────────────────────────────────────────────┐   │    │  │
-│  │   │  │           Multi-Metric Evaluator                  │   │    │  │
-│  │   │  │  • Gross Margin    → Z-Score: 0.4  ✅            │   │    │  │
-│  │   │  │  • Revenue         → Z-Score: 0.6  ✅            │   │    │  │
-│  │   │  │  • Active Users    → Z-Score: 0.3  ✅            │   │    │  │
-│  │   │  └──────────────────────────────────────────────────┘   │    │  │
-│  │   │                         │                                │    │  │
-│  │   │                         ▼                                │    │  │
-│  │   │              Composite Trust Score: 94%                  │    │  │
-│  │   │                         │                                │    │  │
-│  │   │                         ▼                                │    │  │
-│  │   │            DecisionTrustState = TRUSTED                  │    │  │
-│  │   │                         │                                │    │  │
-│  │   └─────────────────────────┼────────────────────────────────┘    │  │
-│  │                             │                                     │  │
-│  │              ┌──────────────┴──────────────┐                     │  │
-│  │              ▼                              ▼                     │  │
-│  │     👤 Human Consumer              🤖 AI Agent                   │  │
-│  │     Dashboard VISIBLE              Actions ALLOWED                │  │
-│  │                                                                   │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### Actual Data Flow (Honest Architecture)
+### Actual Data Flow
 
 ```mermaid
 flowchart LR
@@ -275,7 +268,7 @@ flowchart LR
 
 ### Demo Controls Panel
 
-The extension includes a **live demo panel** (bottom-right) for presentations:
+The extension includes a **live demo panel** for presentations:
 
 **Threshold Slider (1.5 - 5.0)**
 | Setting | Behavior |
@@ -307,23 +300,6 @@ The extension includes a **live demo panel** (bottom-right) for presentations:
 
 ---
 
-## 📈 Impact
-
-### Quantified Value
-
-| Metric | Before TrustOS | With TrustOS |
-|--------|----------------|--------------|
-| Catastrophic KPI misreads | Undetected | **Caught at decision-time** |
-| Decision risk window | Hours to days | **Seconds** |
-| AI agent bad-data actions | Possible | **Gated** |
-| Downstream export corruption | Uncontrolled | **Flagged before export** |
-
-### The Core Insight
-
-> *"TrustOS converts silent data failures into safe, visible system states."*
-
----
-
 ## 🧪 Test Results
 
 ### Dataset Statistics
@@ -338,8 +314,6 @@ The extension includes a **live demo panel** (bottom-right) for presentations:
 
 ### Configurable Detection Sensitivity
 
-**Key insight:** TrustOS catches subtle corruption when configured for your risk tolerance.
-
 | Corruption Type | Value | Z-Score | Threshold 2.0 | Threshold 2.5 | Threshold 4.0 |
 |-----------------|-------|---------|---------------|---------------|---------------|
 | **Decimal shift** | 2400% | 847 | ⛔ LOCKED | ⛔ LOCKED | ⛔ LOCKED |
@@ -347,14 +321,6 @@ The extension includes a **live demo panel** (bottom-right) for presentations:
 | **Currency error** | 28.2% | 2.2 | ⛔ LOCKED | ⚠️ WARNING | ✅ TRUSTED |
 | **Subtle drift** | 27.0% | 1.7 | ⚠️ WARNING | ✅ TRUSTED | ✅ TRUSTED |
 | **Normal data** | 23.5% | 0.0 | ✅ TRUSTED | ✅ TRUSTED | ✅ TRUSTED |
-
-### Recommended Threshold by Use Case
-
-| Business Context | Recommended Threshold | Why |
-|------------------|----------------------|-----|
-| **Financial reporting** | 2.0 (Strict) | Catch all deviations, accept more alerts |
-| **Daily operations** | 2.5 (Balanced) | Catch significant issues, minimize noise |
-| **Seasonal business** | 3.5+ (Relaxed) | Allow expected variance, catch extremes |
 
 ### Performance Metrics
 
@@ -364,8 +330,6 @@ The extension includes a **live demo panel** (bottom-right) for presentations:
 | Polling interval | 30 seconds (configurable) |
 | Memory footprint | < 5MB |
 | Data points processed | 180+ per evaluation |
-
-> **The Point:** TrustOS doesn't have one "right" sensitivity. The slider lets users configure thresholds based on their tolerance for false positives vs. missed detections.
 
 ---
 
@@ -389,7 +353,7 @@ The extension includes a **live demo panel** (bottom-right) for presentations:
 TrustOS isn't just JavaScript + statistics. It's deeply integrated with Tableau's native capabilities:
 
 | Tableau Capability | How TrustOS Uses It |
-|--------------------|--------------------|
+|--------------------|---------------------|
 | **Extensions API** | Real-time access to worksheet data via `getSummaryDataReaderAsync()` |
 | **Parameters API** | `DecisionTrustState` as a first-class Tableau object |
 | **Dynamic Zone Visibility** | Native UI gating—no custom overlays |
@@ -403,10 +367,13 @@ TrustOS isn't just JavaScript + statistics. It's deeply integrated with Tableau'
 
 | Limitation | Mitigation |
 |------------|------------|
-| Z-Score is naive for seasonal data | Threshold tuning + future ML roadmap |
+| Z-Score assumes normal distribution | Threshold tuning for non-normal data |
+| Pattern detection is rule-based, not ML | Patterns are suggestions, not guarantees |
+| Trend monitoring is basic linear regression | Useful for demos, not production forecasting |
 | Agent gating is conceptual | Pattern demonstrated, not production-enforced |
 | UI hiding ≠ security gate | Defense-in-depth with access controls |
 | Demo uses simulated corruption | Explicitly stated; real detection logic runs |
+| Related metrics use hardcoded mapping | No automatic dependency inference |
 
 ---
 
@@ -442,12 +409,12 @@ TrustOS automatically:
 ```
 TrustOS-Tableau/
 ├── extension/
-│   ├── index.html                          # Trust Fabric UI with timeline
-│   ├── script.js                           # Statistical analysis + threshold toggle
-│   ├── styles.css                          # Glassmorphism styling
-│   ├── trustos.trex                        # Tableau extension manifest
-│   └── tableau.extensions.1.latest.min.js  # Tableau Extensions API
-├── sample_data.csv                         # 180 rows test data (Jan-Jun 2024)
+│   ├── index.html          # Vertical Stack UI (v20)
+│   ├── script.js           # Statistical analysis + heuristics
+│   ├── styles.css          # Emerald Enterprise Theme
+│   ├── trustos.trex        # Tableau extension manifest
+│   └── tableau.extensions.1.latest.min.js
+├── sample_data.csv         # 180 rows test data
 └── README.md
 ```
 
@@ -457,10 +424,10 @@ TrustOS-Tableau/
 
 | Criteria | Implementation | Score Target |
 |----------|----------------|--------------|
-| **Innovation (40%)** | First Decision Trust primitive for BI; AI agent gating | 10 |
-| **Technical (30%)** | Multi-metric Z-Score, composite trust, Extensions API | 10 |
-| **Impact (20%)** | Prevents human + AI decisions on bad data | 10 |
-| **UX (10%)** | Trust timeline, professional lock screen | 10 |
+| **Innovation (40%)** | `DecisionTrustState` as a platform primitive; circuit breaker for BI | 8-9 |
+| **Technical (30%)** | Multi-metric Z-Score, trend detection, Extensions API integration | 8-9 |
+| **Impact (20%)** | Prevents human + AI decisions on bad data at consumption time | 8-9 |
+| **UX (10%)** | Emerald Enterprise theme, vertical layout, professional lock screen | 9-10 |
 
 ---
 
@@ -469,7 +436,8 @@ TrustOS-Tableau/
 - [x] Single-metric anomaly detection
 - [x] Multi-metric composite trust
 - [x] Trust timeline audit trail
-- [x] AI agent gating concept
+- [x] Pattern detection heuristics (rule-based)
+- [x] Emerald Enterprise UI theme
 - [ ] Slack/Teams alerting
 - [ ] Org-level trust propagation
 - [ ] Tableau Pulse native integration
