@@ -173,14 +173,18 @@ async function analyzeWorksheetData() {
 
     if (values.length === 0) throw new Error('No numeric values found');
 
-    // Demo anomaly injection
-    if (CONFIG.demoAnomalyActive) {
-        values.push(CONFIG.demoAnomalyValue);
-    }
-
+    // CRITICAL: Calculate baseline stats BEFORE injecting demo value
+    // This ensures anomaly detection compares against clean baseline
     const stats = calculateStatistics(values);
-    const latestValue = CONFIG.demoAnomalyActive ? CONFIG.demoAnomalyValue : values[values.length - 1];
-    const previousValue = values.length > 1 ? values[values.length - 2] : latestValue;
+    const previousValue = values[values.length - 1];  // Last real value
+
+    // Now determine the "latest" value to test
+    let latestValue;
+    if (CONFIG.demoAnomalyActive) {
+        latestValue = CONFIG.demoAnomalyValue;  // Test the anomaly against clean baseline
+    } else {
+        latestValue = values[values.length - 1];
+    }
 
     // Store in history for persistence checking
     valueHistory.push(latestValue);
